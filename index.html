@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gestor de Avaliações — 1.º Ciclo · versão 2.2</title>
+<style>
+:root{
+  --bg:#f3f5f8;--panel:#fff;--ink:#1f2937;--muted:#667085;--line:#dfe4ea;
+  --primary:#3157d5;--primary2:#2547b7;--pt:#8b5cf6;--mat:#0e9f6e;--em:#e68a00;
+  --danger:#c73636;--shadow:0 8px 24px rgba(31,41,55,.08);--radius:14px;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;background:var(--bg);color:var(--ink)}
+button,input,select,textarea{font:inherit}
+button{cursor:pointer}
+.app{display:grid;grid-template-columns:240px 1fr;min-height:100vh}
+.sidebar{background:#172033;color:#fff;padding:18px 14px;position:sticky;top:0;height:100vh;overflow:auto}
+.brand{padding:10px 10px 22px;border-bottom:1px solid rgba(255,255,255,.12);margin-bottom:14px}
+.brand h1{font-size:18px;margin:0 0 5px}.brand p{font-size:12px;color:#b8c0d0;margin:0}
+.nav-title{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:#8791a5;margin:18px 10px 7px}
+.nav-btn{width:100%;border:0;background:transparent;color:#dce2ee;text-align:left;border-radius:10px;padding:11px 12px;margin:3px 0;display:flex;gap:10px;align-items:center}
+.nav-btn:hover,.nav-btn.active{background:#2a3650;color:#fff}
+.nav-btn.pt.active{box-shadow:inset 4px 0 var(--pt)} .nav-btn.mat.active{box-shadow:inset 4px 0 var(--mat)} .nav-btn.em.active{box-shadow:inset 4px 0 var(--em)}
+.sidebar-footer{font-size:11px;color:#8f9ab0;margin:24px 10px}
+.main{min-width:0}
+.topbar{height:70px;background:#fff;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 24px;position:sticky;top:0;z-index:20}
+.topbar-left h2{font-size:20px;margin:0}.topbar-left small{color:var(--muted)}
+.top-actions{display:flex;gap:9px;align-items:center}
+.content{padding:22px 24px 40px}
+.btn{border:1px solid var(--line);background:#fff;border-radius:9px;padding:9px 12px;color:var(--ink)}
+.btn:hover{background:#f8fafc}.btn.primary{background:var(--primary);border-color:var(--primary);color:#fff}.btn.primary:hover{background:var(--primary2)}
+.btn.danger{color:var(--danger);border-color:#f0caca}.btn.small{padding:6px 9px;font-size:12px}.btn.ghost{background:transparent}
+.icon-btn{border:0;background:transparent;border-radius:7px;padding:5px 7px;color:var(--muted)}.icon-btn:hover{background:#eef2f7;color:var(--ink)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+.toolbar{padding:14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px}
+.field{display:flex;flex-direction:column;gap:5px}.field label{font-size:12px;color:var(--muted);font-weight:600}
+input[type=text],input[type=number],input[type=date],select,textarea{border:1px solid #ccd3dc;border-radius:8px;padding:8px 10px;background:#fff;color:var(--ink)}
+input:focus,select:focus,textarea:focus{outline:2px solid #cdd8ff;border-color:var(--primary)}
+.search{min-width:220px}
+.spacer{flex:1}
+.badge{display:inline-flex;align-items:center;border-radius:999px;padding:4px 8px;font-size:11px;font-weight:700;background:#eef2f7;color:#475467}
+.badge.pt{background:#f1eafe;color:#6840b6}.badge.mat{background:#e4f7ef;color:#08775a}.badge.em{background:#fff1d8;color:#a55e00}
+.badge.mb{background:#dff4e9;color:#176a45}.badge.b{background:#e3f0ff;color:#28598a}.badge.s{background:#fff1c7;color:#865f00}.badge.i{background:#ffe3d2;color:#9b3f17}.badge.f{background:#f9dada;color:#9f1c1c}
+.summary-grid{display:grid;grid-template-columns:repeat(4,minmax(160px,1fr));gap:14px;margin-bottom:16px}
+.kpi{padding:16px}.kpi strong{font-size:26px;display:block;margin-top:7px}.kpi small{color:var(--muted)}
+.table-wrap{overflow:auto;border-radius:var(--radius);background:#fff;border:1px solid var(--line);box-shadow:var(--shadow)}
+table{border-collapse:separate;border-spacing:0;width:max-content;min-width:100%}
+th,td{border-right:1px solid var(--line);border-bottom:1px solid var(--line);padding:8px 9px;font-size:12px;text-align:center;white-space:nowrap}
+th{background:#f8fafc;font-weight:700;position:sticky;top:0;z-index:5}
+tr:last-child td{border-bottom:0} th:last-child,td:last-child{border-right:0}
+.sticky-num{position:sticky;left:0;z-index:6;background:#fff;min-width:48px}.sticky-name{position:sticky;left:48px;z-index:6;background:#fff;min-width:210px;text-align:left}
+th.sticky-num,th.sticky-name{background:#f0f3f7;z-index:8}
+tbody tr:hover td{background:#fafcff} tbody tr:hover .sticky-num,tbody tr:hover .sticky-name{background:#f5f8ff}
+.subject-head.pt{background:#f5f0ff;color:#6540a8}.subject-head.mat{background:#eaf8f2;color:#08755a}.subject-head.em{background:#fff4e1;color:#a45f00}
+.score-cell{cursor:pointer;min-width:94px}.score-cell:hover{outline:2px solid #b8c7ff;outline-offset:-2px}
+.score-main{font-weight:700}.score-sub{font-size:10px;color:var(--muted);margin-top:2px}
+.filters-grid{display:grid;grid-template-columns:repeat(4,minmax(150px,1fr));gap:10px;align-items:end}
+.checks{display:flex;gap:12px;flex-wrap:wrap}.check{display:flex;align-items:center;gap:5px;font-size:13px}
+.assessment-picker{padding:12px 14px;margin-bottom:14px}.assessment-picker summary{cursor:pointer;font-weight:700}.assessment-list{display:grid;grid-template-columns:repeat(3,minmax(180px,1fr));gap:7px;margin-top:12px}
+.page-header{display:flex;align-items:flex-start;justify-content:space-between;gap:15px;margin-bottom:16px}.page-header h3{font-size:24px;margin:0 0 5px}.page-header p{margin:0;color:var(--muted)}
+.assessment-grid{display:grid;grid-template-columns:repeat(3,minmax(240px,1fr));gap:14px}
+.assessment-card{padding:16px;position:relative;border-top:4px solid #d6dbe3}.assessment-card.pt{border-top-color:var(--pt)}.assessment-card.mat{border-top-color:var(--mat)}.assessment-card.em{border-top-color:var(--em)}
+.assessment-card h4{margin:9px 0 6px;font-size:16px}.assessment-card p{color:var(--muted);font-size:12px;margin:0 0 14px}.card-actions{display:flex;gap:6px;flex-wrap:wrap}
+.progress{height:7px;background:#edf0f4;border-radius:99px;overflow:hidden;margin:10px 0}.progress span{display:block;height:100%;background:var(--primary)}
+.empty{padding:45px;text-align:center;color:var(--muted)}
+.students-table{width:100%}.students-table td,.students-table th{text-align:left}.students-table td.actions{text-align:right}
+.student-layout{display:grid;grid-template-columns:260px 1fr;gap:16px}.student-side{padding:14px;height:max-content}.student-side select{width:100%}.student-main{display:flex;flex-direction:column;gap:14px}
+.student-hero{padding:18px;display:flex;justify-content:space-between;align-items:center}.student-hero h3{margin:0 0 5px}.student-hero p{margin:0;color:var(--muted)}
+.subject-panel{padding:16px}.subject-panel h4{display:flex;align-items:center;justify-content:space-between;margin:0 0 12px}
+.student-results{width:100%;max-width:none}.student-results th,.student-results td{text-align:left}.student-results td:nth-last-child(-n+2){text-align:center}
+.notes-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.notes-grid textarea{min-height:100px;resize:vertical}
+.modal-backdrop{position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:100;display:flex;align-items:center;justify-content:center;padding:18px}
+.modal{background:#fff;border-radius:16px;width:min(900px,96vw);max-height:92vh;display:flex;flex-direction:column;box-shadow:0 24px 70px rgba(0,0,0,.28)}
+.modal.large{width:min(1200px,98vw)}.modal-head{padding:16px 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}.modal-head h3{margin:0}
+.modal-body{padding:18px;overflow:auto}.modal-foot{padding:13px 18px;border-top:1px solid var(--line);display:flex;justify-content:flex-end;gap:8px}
+.form-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}.form-grid .wide{grid-column:1/-1}
+.criteria-row{display:grid;grid-template-columns:1fr 110px 38px;gap:8px;margin:7px 0}
+.scoring-table input[type=number]{width:76px;padding:6px}.scoring-table input[type=text]{min-width:160px;padding:6px}.scoring-table select{padding:6px}
+.hidden{display:none!important}.muted{color:var(--muted)}.warning{background:#fff8e7;border:1px solid #f3dfa3;padding:10px 12px;border-radius:9px;font-size:12px}
+.toast{position:fixed;right:22px;bottom:22px;background:#172033;color:#fff;padding:11px 15px;border-radius:10px;box-shadow:var(--shadow);z-index:150;opacity:0;transform:translateY(8px);transition:.2s;pointer-events:none}.toast.show{opacity:1;transform:none}
+.mobile-nav{display:none}
+@media(max-width:900px){
+ .app{grid-template-columns:1fr}.sidebar{display:none}.mobile-nav{display:flex;gap:5px;overflow:auto;padding:8px 12px;background:#172033;position:sticky;top:70px;z-index:19}.mobile-nav button{white-space:nowrap;background:#2a3650;color:#fff;border:0;border-radius:8px;padding:8px 10px}
+ .summary-grid{grid-template-columns:repeat(2,1fr)}.assessment-grid{grid-template-columns:1fr}.student-layout{grid-template-columns:1fr}.filters-grid{grid-template-columns:1fr 1fr}.assessment-list{grid-template-columns:1fr}
+ .topbar{padding:0 12px}.content{padding:14px}.top-actions .desktop-only{display:none}
+}
+@media(max-width:560px){.summary-grid,.filters-grid,.notes-grid,.form-grid{grid-template-columns:1fr}.form-grid .wide{grid-column:auto}.topbar-left small{display:none}}
+
+.version-chip{display:inline-flex;align-items:center;padding:3px 7px;border-radius:999px;background:#2a3650;color:#dce2ee;font-size:10px;margin-top:7px}
+.inovar-layout{display:grid;grid-template-columns:320px 1fr;gap:16px}.phrase-list{display:flex;flex-direction:column;gap:7px}.phrase-row{display:grid;grid-template-columns:1fr 36px;gap:6px}.phrase-row input{width:100%}.inovar-text{min-height:190px;resize:vertical}.overview-text{white-space:normal;min-width:260px;text-align:left;line-height:1.35}.save-indicator{font-size:11px;color:var(--muted);padding:0 4px}.export-options{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}.chart-note{font-size:12px;color:var(--muted);line-height:1.45}.comment-summary{display:flex;flex-direction:column;gap:8px}.comment-item{padding:10px 12px;border:1px solid var(--line);border-radius:9px;background:#fafbfc}.comment-item strong{display:block;margin-bottom:4px}.comment-item p{margin:0;white-space:pre-wrap}.top-file-label{display:inline-flex;align-items:center}
+@media(max-width:900px){.inovar-layout{grid-template-columns:1fr}.export-options{grid-template-columns:1fr}.top-actions .compact-hide{display:none}}
+
+
+.cloud-btn{display:inline-flex;align-items:center;gap:7px}.cloud-dot{width:9px;height:9px;border-radius:50%;background:#c73636;box-shadow:0 0 0 3px rgba(199,54,54,.12)}.cloud-dot.on{background:#0e9f6e;box-shadow:0 0 0 3px rgba(14,159,110,.14)}.cloud-dot.busy{background:#e68a00;box-shadow:0 0 0 3px rgba(230,138,0,.14)}.cloud-dot.err{background:#c73636}
+.storage-banner{margin:14px 24px 0;padding:11px 13px;border:1px solid #f3dfa3;background:#fff8e7;border-radius:10px;display:flex;align-items:center;gap:10px;font-size:12px}.storage-banner div{flex:1}.storage-choice{padding:4px}.storage-choice-head{text-align:center;max-width:640px;margin:0 auto 18px}.storage-choice-icon{font-size:42px}.storage-choice-head h2{margin:8px 0}.storage-choice-head p{color:var(--muted);line-height:1.55}.storage-options{display:grid;grid-template-columns:1fr 1fr;gap:14px}.storage-option{border:1px solid var(--line);border-radius:14px;padding:18px;position:relative}.storage-option.recommended{border:2px solid var(--primary);background:#f6f8ff}.recommended-label{position:absolute;right:12px;top:10px;background:var(--primary);color:#fff;border-radius:999px;padding:3px 8px;font-size:10px;font-weight:700}.storage-option h3{margin:0 0 7px}.storage-option p,.storage-option li{font-size:13px;color:var(--muted);line-height:1.5}.storage-option ul{padding-left:18px;min-height:82px}.privacy-note{text-align:center;color:var(--muted);font-size:11px;margin-top:14px}
+@media(max-width:900px){.storage-banner{margin:10px 12px 0}.cloud-btn{max-width:155px}.cloud-btn span:last-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}}
+@media(max-width:650px){.storage-options{grid-template-columns:1fr}.storage-option ul{min-height:0}.top-actions{gap:5px}.top-actions .cloud-btn{display:inline-flex}.storage-banner{align-items:flex-start;flex-wrap:wrap}}
+
+</style>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand"><h1>Gestor de Avaliações</h1><p>1.º Ciclo · versão 2.2</p></div>
+    <div class="nav-title">Turma</div>
+    <button class="nav-btn active" data-view="global">▦ Visão global</button>
+    <button class="nav-btn" data-view="students">♟ Alunos</button>
+    <button class="nav-btn" data-view="student">◎ Visão do aluno</button>
+    <button class="nav-btn" data-view="inovar">✎ Frases do Inovar</button>
+    <div class="nav-title">Disciplinas</div>
+    <button class="nav-btn pt" data-view="subject" data-subject="pt">● Português</button>
+    <button class="nav-btn mat" data-view="subject" data-subject="mat">● Matemática</button>
+    <button class="nav-btn em" data-view="subject" data-subject="em">● Estudo do Meio</button>
+    <div class="nav-title">Ferramentas</div>
+    <button class="nav-btn" data-view="settings">⚙ Configuração e cópias</button>
+    <div class="sidebar-footer">Gravação automática ativa.<br><span class="version-chip">Versão 2.1</span></div>
+  </aside>
+  <main class="main">
+    <header class="topbar">
+      <div class="topbar-left"><h2 id="pageTitle">Visão global</h2><small id="pageSubtitle"></small></div>
+      <div class="top-actions">
+        <span class="save-indicator compact-hide">Guardado automaticamente</span>
+        <button class="btn cloud-btn" id="googleDriveBtn" onclick="toggleGoogleDrive()"><span class="cloud-dot" id="cloudDot"></span><span id="googleDriveBtnText">Ligar Google Drive</span></button>
+        <button class="btn desktop-only" onclick="openPrintModal()">🖨 Imprimir</button>
+        <button class="btn" onclick="openExportModal()">⬇ Exportar</button>
+        <button class="btn compact-hide" onclick="exportBackup()">💾 Gravar cópia</button>
+        <label class="btn top-file-label compact-hide">↥ Importar<input type="file" accept=".json" hidden onchange="importBackup(this.files[0]);this.value=''" /></label>
+        <button class="btn primary" id="contextAction" onclick="contextAction()">+ Nova avaliação</button>
+      </div>
+    </header>
+    <div class="storage-banner hidden" id="storageBanner"><span>⚠️</span><div><strong>Modo local:</strong> os dados estão guardados apenas neste navegador. Podem perder-se ao mudar de equipamento ou limpar os dados do navegador.</div><button class="btn small primary" onclick="chooseDriveMode()">Ligar Google Drive</button></div>
+    <div class="mobile-nav">
+      <button onclick="go('global')">Global</button><button onclick="go('students')">Alunos</button><button onclick="go('student')">Aluno</button><button onclick="go('inovar')">Inovar</button>
+      <button onclick="go('subject','pt')">Português</button><button onclick="go('subject','mat')">Matemática</button><button onclick="go('subject','em')">Est. Meio</button>
+    </div>
+    <section class="content" id="content"></section>
+  </main>
+</div>
+<div id="modalRoot"></div><div class="toast" id="toast"></div>
+<script>
+const APP_VERSION='2.2';
+const STORAGE_KEY='gestor_avaliacoes_1ciclo_v2';
+const GOOGLE_CLIENT_ID='COLOCAR_CLIENT_ID_DO_GOOGLE_CLOUD_AQUI';
+const GOOGLE_SCOPE='https://www.googleapis.com/auth/drive.file';
+const DRIVE_FOLDER_NAME='Avalia+ 1.º Ciclo';
+const DRIVE_FILE_NAME='dados.json';
+const DRIVE_APP_ID='avaliamais-1ciclo-v1';
+const STORAGE_MODE_KEY='avaliamais_1ciclo_storage_mode';
+const SUBJECTS={
+  pt:{name:'Português',short:'PORT',class:'pt'},
+  mat:{name:'Matemática',short:'MAT',class:'mat'},
+  em:{name:'Estudo do Meio',short:'EM',class:'em'}
+};
+const QUAL={MB:'Muito Bom',B:'Bom',S:'Suficiente',I:'Insuficiente',F:'Fraco'};
+const DEFAULT_INOVAR_BANK={"pt":{"Casos de Leitura":["Reconhece com dificuldade e nem sempre aplica os casos de leitura estudados.","Reconhece e por vezes aplica os casos de leitura estudados.","Reconhece e aplica com facilidade os casos de leitura estudados.","Reconhece e aplica com muita facilidade os casos de leitura estudados."],"Oralidade 1":["Tem dificuldade em expressar ideias e sentimentos;","Expressa sentimentos e ideias;","Expressa com facilidade ideias e sentimentos;","Expressa com muita facilidade ideias e sentimentos;"],"Oralidade 2":["Tem dificuldade em recontar um acontecimento ou uma história;","Reconta um acontecimento ou uma história;","Reconta com facilidade acontecimentos ou histórias;","Reconta com muita facilidade acontecimentos ou histórias;"],"Oralidade 3":["Expressa-se de forma pouco organizada e com vocabulário pobre.","Expressa-se de forma organizada e com vocabulário adequado.","Expressa-se de forma muito organizada e com vocabulário rico."],"Leitura":["Não reconhece as letras do alfabeto, nem as junta.","Reconhece as letras do alfabeto, mas por vezes faz trocas de letras.","Lê com alguma hesitação.","Lê com ritmo lento e pouca fluência.","Lê com ritmo adequado e fluência.","Lê com bom ritmo e fluência.","Lê com muito bom ritmo, fluência e entoação."],"Escrita":["Não escreve palavras, nem frases.","Escreve palavras com alguma dificuldade.","Escreve palavras que aplica em frases.","Escreve frases com correção.","Escreve frases com muita correção.","Escreve pequenos textos.","Escreve pequenos textos com correção.","Escreve pequenos textos com muita correção."],"Gramática":["Não reconhece as regras estudadas.","Reconhece as regras estudadas, mas nem sempre as aplica com correção.","Reconhece e aplica com facilidade as regras estudadas.","Reconhece e aplica com muita facilidade as regras estudadas."]},"mat":{"Leitura/Escrita de Núm.":["Tem dificuldade em reconhecer e ler números inteiros até ---.","Lê números inteiros até 199, com algum apoio.","Lê e escreve números inteiros até 199 com facilidade.","Lê e escreve números inteiros até 199 com muita facilidade."],"Valor Posicional":["Não reconhece o valor posicional dos algarismos.","Reconhece o valor posicional dos algarismos com ajuda.","Compreende e utiliza o valor posicional com facilidade.","Utiliza o valor posicional com muita facilidade."],"Adição":["Tem dificuldades em compreender o conceito de adição e em somar números naturais.","Consegue realizar adições simples com apoio, utilizando materiais manipuláveis para entender o processo.","Realiza adições com números naturais até --- de forma autónoma, aplicando estratégias de cálculo mental e escrito.","Executa rapidamente operações de adição com confiança, utilizando várias estratégias, inclusive cálculo mental.","Consegue resolver problemas que envolvem adição em contextos variados, explicando claramente o raciocínio usado."],"Subtração":["Tem dificuldades em compreender o conceito de subtração como retirar ou comparar quantidades.","Precisa de apoio para realizar subtrações simples e utiliza materiais para resolver os cálculos.","Realiza subtrações com números naturais até --- de forma autónoma, usando estratégias variadas.","Executa operações de subtração com facilidade, explicando claramente os procedimentos utilizados.","Resolve problemas práticos que envolvem subtração, apresentando justificações claras e racionais."],"Org. e Trat. de Dados":["Tem dificuldades em organizar e interpretar dados.","Organiza dados simples e interpreta com ajuda.","Organiza e interpreta dados com facilidade e autonomia.","Analisa e interpreta dados complexos criticamente e de modo independente."],"Tempo":["Tem dificuldade em ler as horas no relógio analógico ou digital e não compreende o uso do calendário.","Lê as horas inteiras e meia hora no relógio com ajuda e compreende o calendário em atividades orientadas.","Lê corretamente horas inteiras, meias horas e quinze minutos, utilizando relógio analógico e digital.","Lê e interpreta todas as unidades de tempo e diferentes formatos de relógio, incluindo horas complexas."],"Resolução de Problemas":["Apresenta dificuldades na compreensão e resolução de situações problemáticas.","Resolve situações problemáticas simples com auxílio do professor e materiais.","Resolve situações problemáticas com um ou mais passos de forma autónoma.","Resolve, com facilidade, situações problemáticas justificando os seus raciocínios."]},"em":{"Sociedade":["Tem dificuldade em conhecer a importância do diálogo, da negociação e do compromisso na resolução de situações e conflitos.","Conhece a importância do diálogo, da negociação e do compromisso na resolução de situações e conflitos.","Conhece com facilidade a importância do diálogo, da negociação e do compromisso na resolução de situações e conflitos.","Conhece com muita facilidade a importância do diálogo, da negociação e do compromisso na resolução de situações e conflitos."],"Natureza":["Tem dificuldade em associar os ossos e os músculos à posição, ao movimento e ao equilíbrio do corpo.","Associa os ossos e os músculos à posição, ao movimento e ao equilíbrio do corpo.","Associa com facilidade os ossos e os músculos à posição, ao movimento e ao equilíbrio do corpo.","Associa com muita facilidade os ossos e os músculos à posição, ao movimento e ao equilíbrio do corpo."],"Corpo Humano":["Tem dificuldade em conhecer os principais órgãos do corpo.","Conhece os principais órgãos do corpo.","Conhece com facilidade os principais órgãos do corpo.","Conhece com muita facilidade os principais órgãos do corpo."],"Vacinação":["Tem dificuldade em reconhecer a importância da vacinação.","Reconhece a importância da vacinação.","Reconhece com facilidade a importância da vacinação.","Reconhece com muita facilidade a importância da vacinação."],"Refletir comportamento":["Tem dificuldade em refletir sobre comportamentos e atitudes, vivenciadas ou observadas.","Reflete sobre comportamentos e atitudes, vivenciadas ou observadas.","Reflete com facilidade sobre comportamentos e atitudes, vivenciadas ou observadas.","Reflete com muita facilidade sobre comportamentos e atitudes, vivenciadas ou observadas."],"Cidadania":["Tem dificuldade em refletir sobre comportamentos e atitudes, vivenciadas ou observadas que contribuem para o bem-estar físico e psicológico, individual e coletivo.","Reflete sobre comportamentos e atitudes, vivenciadas ou observadas que contribuem para o bem-estar físico e psicológico, individual e coletivo.","Reflete com facilidade sobre comportamentos e atitudes, vivenciadas ou observadas que contribuem para o bem-estar físico e psicológico, individual e coletivo.","Reflete com muita facilidade sobre comportamentos e atitudes, vivenciadas ou observadas que contribuem para o bem-estar físico e psicológico, individual e coletivo."]},"global":{"Síntese global":["Mantém uma atitude responsável, empenhada e colaborativa.","Participa com interesse e realiza as tarefas com autonomia.","Tem apresentado uma evolução positiva ao longo do período.","Deve melhorar a organização, a atenção e a regularidade do trabalho.","Necessita de maior acompanhamento para consolidar as aprendizagens."]}};
+const DEMO={"meta":{"schoolYear":"2026-2027","className":"Turma","teacher":"","school":"","version":"2.2"},"students":[{"id":"s1","number":1,"name":"Ana cm","active":true,"order":0},{"id":"s2","number":2,"name":"Miguel cm","active":true,"order":1},{"id":"s3","number":3,"name":"Paula cm","active":true,"order":2}],"assessments":[{"id":"pt_1_sum","subject":"pt","title":"Avaliação sumativa — 1.º período","type":"Avaliação sumativa","period":1,"date":"","scale":"numeric","maxScore":100,"criteria":[{"id":"pt_1_sum_q1","label":"Questão 1","max":25},{"id":"pt_1_sum_q2","label":"Questão 2","max":25},{"id":"pt_1_sum_q3","label":"Questão 3","max":25},{"id":"pt_1_sum_q4","label":"Questão 4","max":25}],"results":{},"archived":false,"order":0},{"id":"pt_1_mini1","subject":"pt","title":"Mini ficha 1 — 1.º período","type":"Mini ficha","period":1,"date":"","scale":"numeric","maxScore":100,"criteria":[{"id":"pt_1_mini1_q1","label":"Questão 1","max":50},{"id":"pt_1_mini1_q2","label":"Questão 2","max":50}],"results":{},"archived":false,"order":1},{"id":"pt_1_mini2","subject":"pt","title":"Mini ficha 2 — 1.º período","type":"Mini ficha","period":1,"date":"","scale":"numeric","maxScore":100,"criteria":[{"id":"pt_1_mini2_q1","label":"Questão 1","max":50},{"id":"pt_1_mini2_q2","label":"Questão 2","max":50}],"results":{},"archived":false,"order":2},{"id":"pt_2_sum","subject":"pt","title":"Avaliação sumativa — 2.º período","type":"Avaliação sumativa","period":2,"date":"","scale":"numeric","maxScore":100,"criteria":[{"id":"pt_2_sum_q1","label":"Questão 1","max":25},{"id":"pt_2_sum_q2","label":"Questão 2","max":25},{"id":"pt_2_sum_q3","label":"Questão 3","max":25},{"id":"pt_2_sum_q4","label":"Questão 4","max":25}],"results":{},"archived":false,"order":3},{"id":"pt_2_mini1","subject":"pt","title":"Mini ficha 1 — 2.º período","type":"Mini ficha","period":2,"date":"","scale":"numeric","maxScore":100,"criteria":[{"id":"pt_2_mini1_q1","label":"Questão 1","max":50},{"id":"pt_2_mini1_q2","label":"Questão 2","max":50}],"results":{},"archived":false,"order":4},{"id":"pt_2_mini2","subject":"pt","title":"Mini ficha 2 — 2.º período","type":"Mini ficha","period":2,"date":"","scale":"numeric","maxScore":100,"criteria":[{"id":"pt_2_mini2_q1","label":"Questão 1","max":50},{"id":"pt_2_mini2_q2","label":"Questão 2","max":50}],"results":{},"archived":false,"order":5},{"id":"pt_3_sum","subject":"pt","title":"Avaliação sumativa — 3.º período","type":"Avaliação sumativa","period":3,"date":"","scale":"numeric","maxScore":100,"criteria":[{"id":"pt_3_sum_q1","label":"Questão 1","max":25},{"id":"pt_3_sum_q2","label":"Questão 2","max":25},{"id":"pt_3_sum_q3","label":"Questão 3","max":25},{"id":"pt_3_sum_q4","label":"Questão 4","max":25}],"results":{},"archived":false,"order":6},{"id":"pt_3_mini1","subject":"pt","title":"Mini ficha 1 — 3.º período","type":"Mini ficha","period":3,"date":"","scale":"numeric","maxScore":100,"criteria":[{"id":"pt_3_mini1_q1","label":"Questão 1","max":50},{"id":"pt_3_mini1_q2","label":"Questão 2","max":50}],"results":{},"archived":false,"order":7},{"id":"pt_3_mini2","subject":"pt","title":"Mini ficha 2 — 3.º período","type":"Mini ficha","period":3,"date":"","scale":"numeric","maxScore":100,"criteria":[{"id":"pt_3_mini2_q1","label":"Questão 1","max":50},{"id":"pt_3_mini2_q2","label":"Questão 2","max":50}],"results":{},"archived":false,"order":8},{"id":"mat_1_sum","subject":"mat","title":"Avaliação sumativa — 1.º período","type":"Avaliação sumativa","period":1,"date":"","scale":"numeric","maxScore":100,"criteria":[{"id":"mat_1_sum_q1","label":"Questão 1","max":25},{"id":"mat_1_sum_q2","label":"Questão 2","max":25},{"id":"mat_1_sum_q3","label":"Questão 3","max":25},{"id":"mat_1_sum_q4","label":"Questão 4","max":25}],"results":{},"archived":false,"order":9},{"id":"mat_1_mini1","subject":"mat","title":"Mini ficha 1 — 1.º período","type":"Mini ficha","period":1,"date":"","scale":"numeric","maxScore":100,"criteria":[{"id":"mat_1_mini1_q1","label":"Questão 1","max":50},{"id":"mat_1_mini1_q2","label":"Questão 2","max":50}],"results":{},"archived":false,"order":10},{"id":"mat_1_mini2","subject":"mat","title":"Mini ficha 2 — 1.º período","type":"Mini ficha","period":1,"date":"","scale":"numeric","maxScore":100,"criteria":[{"id":"mat_1_mini2_q1","label":"Questão 1","max":50},{"id":"mat_1_mini2_q2","label":"Questão 2","max":50}],"results":{},"archived":false,"order":11},{"id":"mat_2_sum","subject":"mat","title":"Avaliação sumativa — 2.º período","type":"Avaliação sumativa","period":2,"date":"","scale":"numeric","maxScore":100,"criteria":[{"id":"mat_2_sum_q1","label":"Questão 1","max":25},{"id":"mat_2_sum_q2","label":"Questão 2","max":25},{"id":"mat_2_sum_q3","label":"Questão 3","max":25},{"id":"mat_2_sum_q4","label":"Questão 4","max":25}],"results":{},"archived":false,"order":12},{"id":"mat_2_mini1","subject":"mat","title":"Mini ficha 1 — 2.º período","type":"Mini ficha","period":2,"date":"","scale":"numeric","maxScore":100,"criteria":[{"id":"mat_2_mini1_q1","label":"Questão 1","max":50},{"id":"mat_2_mini1_q2","label":"Questão 2","max":50}],"results":{},"archived":false,"order":13},{"id":"mat_2_mini2","subject":"mat","title":"Mini ficha 2 — 2.º período","type":"Mini ficha","period":2,"date":"","scale":"numeric","maxScore":100,"criteria":[{"id":"mat_2_mini2_q1","label":"Questão 1","max":50},{"id":"mat_2_mini2_q2","label":"Questão 2","max":50}],"results":{},"archived":false,"order":14},{"id":"mat_3_sum","subject":"mat","title":"Avaliação sumativa — 3.º período","type":"Avaliação sumativa","period":3,"date":"","scale":"numeric","maxScore":100,"criteria":[{"id":"mat_3_sum_q1","label":"Questão 1","max":25},{"id":"mat_3_sum_q2","label":"Questão 2","max":25},{"id":"mat_3_sum_q3","label":"Questão 3","max":25},{"id":"mat_3_sum_q4","label":"Questão 4","max":25}],"results":{},"archived":false,"order":15},{"id":"mat_3_mini1","subject":"mat","title":"Mini ficha 1 — 3.º período","type":"Mini ficha","period":3,"date":"","scale":"numeric","maxScore":100,"criteria":[{"id":"mat_3_mini1_q1","label":"Questão 1","max":50},{"id":"mat_3_mini1_q2","label":"Questão 2","max":50}],"results":{},"archived":false,"order":16},{"id":"mat_3_mini2","subject":"mat","title":"Mini ficha 2 — 3.º período","type":"Mini ficha","period":3,"date":"","scale":"numeric","maxScore":100,"criteria":[{"id":"mat_3_mini2_q1","label":"Questão 1","max":50},{"id":"mat_3_mini2_q2","label":"Questão 2","max":50}],"results":{},"archived":false,"order":17},{"id":"em_1_sum","subject":"em","title":"Avaliação sumativa — 1.º período","type":"Avaliação sumativa","period":1,"date":"","scale":"numeric","maxScore":100,"criteria":[{"id":"em_1_sum_q1","label":"Questão 1","max":25},{"id":"em_1_sum_q2","label":"Questão 2","max":25},{"id":"em_1_sum_q3","label":"Questão 3","max":25},{"id":"em_1_sum_q4","label":"Questão 4","max":25}],"results":{},"archived":false,"order":18},{"id":"em_1_mini1","subject":"em","title":"Mini ficha 1 — 1.º período","type":"Mini ficha","period":1,"date":"","scale":"numeric","maxScore":100,"criteria":[{"id":"em_1_mini1_q1","label":"Questão 1","max":50},{"id":"em_1_mini1_q2","label":"Questão 2","max":50}],"results":{},"archived":false,"order":19},{"id":"em_1_mini2","subject":"em","title":"Mini ficha 2 — 1.º período","type":"Mini ficha","period":1,"date":"","scale":"numeric","maxScore":100,"criteria":[{"id":"em_1_mini2_q1","label":"Questão 1","max":50},{"id":"em_1_mini2_q2","label":"Questão 2","max":50}],"results":{},"archived":false,"order":20},{"id":"em_2_sum","subject":"em","title":"Avaliação sumativa — 2.º período","type":"Avaliação sumativa","period":2,"date":"","scale":"numeric","maxScore":100,"criteria":[{"id":"em_2_sum_q1","label":"Questão 1","max":25},{"id":"em_2_sum_q2","label":"Questão 2","max":25},{"id":"em_2_sum_q3","label":"Questão 3","max":25},{"id":"em_2_sum_q4","label":"Questão 4","max":25}],"results":{},"archived":false,"order":21},{"id":"em_2_mini1","subject":"em","title":"Mini ficha 1 — 2.º período","type":"Mini ficha","period":2,"date":"","scale":"numeric","maxScore":100,"criteria":[{"id":"em_2_mini1_q1","label":"Questão 1","max":50},{"id":"em_2_mini1_q2","label":"Questão 2","max":50}],"results":{},"archived":false,"order":22},{"id":"em_2_mini2","subject":"em","title":"Mini ficha 2 — 2.º período","type":"Mini ficha","period":2,"date":"","scale":"numeric","maxScore":100,"criteria":[{"id":"em_2_mini2_q1","label":"Questão 1","max":50},{"id":"em_2_mini2_q2","label":"Questão 2","max":50}],"results":{},"archived":false,"order":23},{"id":"em_3_sum","subject":"em","title":"Avaliação sumativa — 3.º período","type":"Avaliação sumativa","period":3,"date":"","scale":"numeric","maxScore":100,"criteria":[{"id":"em_3_sum_q1","label":"Questão 1","max":25},{"id":"em_3_sum_q2","label":"Questão 2","max":25},{"id":"em_3_sum_q3","label":"Questão 3","max":25},{"id":"em_3_sum_q4","label":"Questão 4","max":25}],"results":{},"archived":false,"order":24},{"id":"em_3_mini1","subject":"em","title":"Mini ficha 1 — 3.º período","type":"Mini ficha","period":3,"date":"","scale":"numeric","maxScore":100,"criteria":[{"id":"em_3_mini1_q1","label":"Questão 1","max":50},{"id":"em_3_mini1_q2","label":"Questão 2","max":50}],"results":{},"archived":false,"order":25},{"id":"em_3_mini2","subject":"em","title":"Mini ficha 2 — 3.º período","type":"Mini ficha","period":3,"date":"","scale":"numeric","maxScore":100,"criteria":[{"id":"em_3_mini2_q1","label":"Questão 1","max":50},{"id":"em_3_mini2_q2","label":"Questão 2","max":50}],"results":{},"archived":false,"order":26}],"studentNotes":{},"inovar":{"phraseBank":{"pt":["Revela facilidade na compreensão e interpretação de textos.","Lê com fluência, expressividade e respeito pela pontuação.","Produz textos organizados, coerentes e adequados ao tema.","Deve continuar a consolidar a ortografia e a revisão dos textos.","Necessita de melhorar a fluência e a compreensão leitora."],"mat":["Revela um bom domínio dos conteúdos e procedimentos matemáticos.","Resolve problemas com estratégias adequadas e explica o seu raciocínio.","Apresenta segurança no cálculo e na aplicação dos conhecimentos.","Deve consolidar o cálculo e a interpretação dos enunciados.","Necessita de desenvolver estratégias mais sistemáticas de resolução de problemas."],"em":["Demonstra interesse e conhecimentos sólidos sobre os temas abordados.","Participa de forma pertinente e relaciona os conteúdos com situações do quotidiano.","Realiza as tarefas com autonomia e rigor.","Deve consolidar alguns conteúdos e participar com maior regularidade.","Necessita de melhorar a organização e a aplicação dos conhecimentos."],"global":["Mantém uma atitude responsável, empenhada e colaborativa.","Participa com interesse e realiza as tarefas com autonomia.","Tem apresentado uma evolução positiva ao longo do período.","Deve melhorar a organização, a atenção e a regularidade do trabalho.","Necessita de maior acompanhamento para consolidar as aprendizagens."]},"texts":{}}};
+let googleTokenClient=null,googleAccessToken='',googleTokenExpiresAt=0,driveFolderId='',driveFileId='',syncTimer=null,syncInProgress=false;
+let state=loadState();
+let ui={view:'global',subject:'pt',studentId:activeStudents()[0]?.id||'',studentPeriod:'all',inovarStudentId:'',inovarScope:'pt',inovarSubtheme:{pt:'Casos de Leitura',mat:'Leitura/Escrita de Núm.',em:'Sociedade',global:'Síntese global'},global:{
+  period:'all',subjects:['pt','mat','em'],type:'all',search:'',display:'both',selected:[]
+}};
+initializeSelection();
+
+function deepClone(x){return JSON.parse(JSON.stringify(x))}
+function isNestedInovarBank(bank){return !!bank&&['pt','mat','em','global'].every(k=>bank[k]&&typeof bank[k]==='object'&&!Array.isArray(bank[k]))}
+function normalizeInovarBank(bank){if(!isNestedInovarBank(bank))return deepClone(DEFAULT_INOVAR_BANK);const out=deepClone(bank);['pt','mat','em','global'].forEach(k=>{out[k]=out[k]&&typeof out[k]==='object'&&!Array.isArray(out[k])?out[k]:{};Object.keys(out[k]).forEach(st=>{if(!Array.isArray(out[k][st]))out[k][st]=[]});if(!Object.keys(out[k]).length){const first=Object.keys(DEFAULT_INOVAR_BANK[k])[0];out[k][first]=deepClone(DEFAULT_INOVAR_BANK[k][first])}});return out}
+function normalizeState(data){const d=data&&typeof data==='object'?data:deepClone(DEMO);d.meta=d.meta||{};d.meta.version=APP_VERSION;d.students=Array.isArray(d.students)?d.students:[];d.assessments=Array.isArray(d.assessments)?d.assessments:[];d.studentNotes=d.studentNotes||{};d.inovar=d.inovar||{};d.inovar.phraseBank=normalizeInovarBank(d.inovar.phraseBank);d.inovar.texts=d.inovar.texts||{};d._sync=d._sync||{updatedAt:new Date(0).toISOString(),deviceId:getDeviceId()};d._sync.deviceId=d._sync.deviceId||getDeviceId();return d}
+function loadState(){try{const v=localStorage.getItem(STORAGE_KEY);return normalizeState(v?JSON.parse(v):deepClone(DEMO))}catch(e){return normalizeState(deepClone(DEMO))}}
+function saveState(msg){state.meta=state.meta||{};state.meta.version=APP_VERSION;ensureSyncMeta();state._sync.updatedAt=new Date().toISOString();localStorage.setItem(STORAGE_KEY,JSON.stringify(state));const si=document.querySelector('.save-indicator');if(si){si.textContent=googleAccessToken?'A guardar no Google Drive…':'Guardado agora';setTimeout(()=>{if(si)si.textContent=googleAccessToken?'Guardado no Google Drive':storageMode()==='local'?'Guardado apenas neste dispositivo':'Guardado automaticamente'},1200)}if(googleAccessToken)scheduleDriveSave();if(msg)toast(msg)}
+
+function getDeviceId(){let id=localStorage.getItem('avaliamais_1ciclo_device_id');if(!id){id='dev_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,9);localStorage.setItem('avaliamais_1ciclo_device_id',id)}return id}
+function ensureSyncMeta(){state._sync=state._sync||{};state._sync.deviceId=state._sync.deviceId||getDeviceId();state._sync.updatedAt=state._sync.updatedAt||new Date(0).toISOString()}
+function storageMode(){return localStorage.getItem(STORAGE_MODE_KEY)||''}
+function googleConfigured(){return GOOGLE_CLIENT_ID.endsWith('.apps.googleusercontent.com')&&!GOOGLE_CLIENT_ID.includes('COLOCAR_')}
+function tokenValid(){return !!googleAccessToken&&Date.now()<googleTokenExpiresAt}
+function updateStorageModeUI(){const banner=document.getElementById('storageBanner');if(banner)banner.classList.toggle('hidden',storageMode()!=='local'||!!googleAccessToken)}
+function setCloudUI(status,text){const dot=document.getElementById('cloudDot'),btnText=document.getElementById('googleDriveBtnText'),si=document.querySelector('.save-indicator');if(dot)dot.className='cloud-dot'+(status==='on'?' on':status==='busy'?' busy':status==='error'?' err':'');if(btnText)btnText.textContent=googleAccessToken?'Google Drive ligado':'Ligar Google Drive';if(si&&text)si.textContent=text;updateStorageModeUI()}
+function showStorageChoice(){if(storageMode())return updateStorageModeUI();modal(`<div class="modal-head"><h3>Guardar os seus dados</h3></div><div class="modal-body"><div class="storage-choice"><div class="storage-choice-head"><div class="storage-choice-icon">☁️</div><h2>Onde quer guardar os dados?</h2><p>Ligue a sua conta Google para sincronizar automaticamente alunos, avaliações, comentários e frases do Inovar. Também pode experimentar a aplicação apenas neste dispositivo.</p></div><div class="storage-options"><section class="storage-option recommended"><span class="recommended-label">Recomendado</span><h3>Google Drive</h3><p>Os dados ficam na própria conta Google do professor.</p><ul><li>Sincronização entre computador, tablet e telemóvel</li><li>Cópia local para situações temporariamente sem Internet</li><li>O autor da aplicação não vê os dados</li></ul><button class="btn primary" onclick="chooseDriveMode()">Ligar ao Google Drive</button></section><section class="storage-option"><h3>Apenas neste dispositivo</h3><p>Permite experimentar sem iniciar sessão.</p><ul><li>Guarda apenas neste navegador</li><li>Não sincroniza com outros equipamentos</li><li>Pode perder-se ao limpar os dados do navegador</li></ul><button class="btn" onclick="chooseLocalMode()">Continuar em modo local</button></section></div><div class="privacy-note">Pode mudar de opção mais tarde no botão do topo ou na Configuração.</div></div></div>`)
+}
+function chooseLocalMode(){localStorage.setItem(STORAGE_MODE_KEY,'local');closeModal();setCloudUI('','Guardado apenas neste dispositivo');toast('Modo local ativado.')}
+function chooseDriveMode(){localStorage.setItem(STORAGE_MODE_KEY,'drive');closeModal();updateStorageModeUI();toggleGoogleDrive()}
+function initGoogleDrive(){if(!googleConfigured())return setCloudUI('error','Google Drive ainda por configurar');if(!window.google?.accounts?.oauth2)return setTimeout(initGoogleDrive,250);googleTokenClient=google.accounts.oauth2.initTokenClient({client_id:GOOGLE_CLIENT_ID,scope:GOOGLE_SCOPE,callback:handleGoogleToken,error_callback:()=>setCloudUI('error','Ligação ao Drive não concluída — dados locais seguros')})}
+function toggleGoogleDrive(){if(!googleConfigured())return alert('Falta colocar o Client ID do Google Cloud nesta versão.');if(googleAccessToken){try{google.accounts.oauth2.revoke(googleAccessToken,()=>{})}catch(e){}googleAccessToken='';googleTokenExpiresAt=0;driveFolderId='';driveFileId='';localStorage.setItem(STORAGE_MODE_KEY,'local');setCloudUI('','Guardado apenas neste dispositivo');toast('Google Drive desligado. Continua em modo local.');return}if(!googleTokenClient)return alert('O serviço Google ainda está a carregar. Tente novamente dentro de alguns segundos.');googleTokenClient.requestAccessToken({prompt:'select_account consent'})}
+async function handleGoogleToken(resp){if(resp.error)return setCloudUI('error','Erro na autorização do Google Drive');googleAccessToken=resp.access_token;googleTokenExpiresAt=Date.now()+((Number(resp.expires_in)||3600)-60)*1000;localStorage.setItem(STORAGE_MODE_KEY,'drive');closeModal();setCloudUI('busy','A ligar ao Google Drive…');try{await prepareDrive();await reconcileWithDrive();setCloudUI('on','Guardado no Google Drive');toast('Google Drive ligado.')}catch(e){console.error(e);setCloudUI('error','Erro ao ligar ao Google Drive');alert('Não foi possível preparar a gravação no Google Drive. Confirme que autorizou o acesso e tente novamente.')}}
+async function driveFetch(url,options={}){if(!tokenValid()){googleAccessToken='';throw new Error('TOKEN_EXPIRED')}const headers=new Headers(options.headers||{});headers.set('Authorization','Bearer '+googleAccessToken);const r=await fetch(url,{...options,headers});if(r.status===401){googleAccessToken='';throw new Error('TOKEN_EXPIRED')}if(!r.ok)throw new Error('DRIVE_'+r.status+': '+await r.text());return r}
+function qDrive(s){return String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'")}
+async function findDriveFile(name,parentId,mimeType){let q=`name='${qDrive(name)}' and trashed=false`;if(parentId)q+=` and '${qDrive(parentId)}' in parents`;if(mimeType)q+=` and mimeType='${qDrive(mimeType)}'`;const r=await driveFetch('https://www.googleapis.com/drive/v3/files?spaces=drive&fields=files(id,name,modifiedTime)&pageSize=100&q='+encodeURIComponent(q));const data=await r.json();return data.files?.[0]||null}
+async function prepareDrive(){let folder=await findDriveFile(DRIVE_FOLDER_NAME,null,'application/vnd.google-apps.folder');if(!folder){const r=await driveFetch('https://www.googleapis.com/drive/v3/files?fields=id',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:DRIVE_FOLDER_NAME,mimeType:'application/vnd.google-apps.folder',appProperties:{appId:DRIVE_APP_ID}})});folder=await r.json()}driveFolderId=folder.id;const file=await findDriveFile(DRIVE_FILE_NAME,driveFolderId,'application/json');driveFileId=file?.id||''}
+function cloudPayload(){ensureSyncMeta();return{appId:DRIVE_APP_ID,appVersion:APP_VERSION,updatedAt:state._sync.updatedAt,state}}
+async function readDrivePayload(){if(!driveFileId)return null;const r=await driveFetch(`https://www.googleapis.com/drive/v3/files/${driveFileId}?alt=media`);try{return await r.json()}catch(e){return null}}
+function scheduleDriveSave(){clearTimeout(syncTimer);syncTimer=setTimeout(writeDrivePayload,650)}
+async function writeDrivePayload(){if(syncInProgress||!googleAccessToken)return;syncInProgress=true;setCloudUI('busy','A guardar no Google Drive…');try{const payload=JSON.stringify(cloudPayload());if(!driveFileId){const boundary='-------avaliamais1ciclo'+Date.now();const meta={name:DRIVE_FILE_NAME,parents:[driveFolderId],mimeType:'application/json',appProperties:{appId:DRIVE_APP_ID}};const body=`--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify(meta)}\r\n--${boundary}\r\nContent-Type: application/json\r\n\r\n${payload}\r\n--${boundary}--`;const r=await driveFetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id',{method:'POST',headers:{'Content-Type':'multipart/related; boundary='+boundary},body});driveFileId=(await r.json()).id}else await driveFetch(`https://www.googleapis.com/upload/drive/v3/files/${driveFileId}?uploadType=media`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:payload});setCloudUI('on','Guardado no Google Drive')}catch(e){console.error(e);if(String(e.message).includes('TOKEN_EXPIRED'))setCloudUI('error','Sessão Google expirada — volte a ligar');else setCloudUI('error','Erro de sincronização — dados locais seguros')}finally{syncInProgress=false}}
+async function reconcileWithDrive(){const remote=await readDrivePayload();if(!remote?.state){await writeDrivePayload();return}ensureSyncMeta();const remoteTime=Date.parse(remote.updatedAt||remote.state?._sync?.updatedAt||0)||0,localTime=Date.parse(state._sync.updatedAt||0)||0;if(remoteTime>localTime+1000){const useRemote=confirm('Existe uma versão mais recente no Google Drive.\\n\\nOK: carregar a versão do Drive\\nCancelar: manter os dados deste dispositivo e substituir a versão do Drive');if(useRemote){state=normalizeState(remote.state);ensureSyncMeta();localStorage.setItem(STORAGE_KEY,JSON.stringify(state));ui.global.selected=[];initializeSelection();render();toast('Dados carregados do Google Drive.');return}}await writeDrivePayload()}
+
+function activeStudents(){return state.students.filter(s=>s.active!==false).sort((a,b)=>(a.order??a.number)-(b.order??b.number))}
+function allAssessments(){return state.assessments.filter(a=>!a.archived)}
+function initializeSelection(){if(!ui.global.selected.length)ui.global.selected=allAssessments().map(a=>a.id)}
+function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
+function uid(prefix='id'){return prefix+'_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,7)}
+function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),1700)}
+function mention(p){if(p==null||Number.isNaN(p))return '';if(p>=90)return'MB';if(p>=70)return'B';if(p>=50)return'S';if(p>=20)return'I';return'F'}
+function badge(code){if(!code)return'<span class="muted">—</span>';return `<span class="badge ${code.toLowerCase()}">${esc(code)}</span>`}
+function resultRecord(a,sid){return a.results?.[sid]||null}
+function percent(a,sid){
+  const r=resultRecord(a,sid);if(!r||r.status&&r.status!=='normal')return null;
+  if(a.scale!=='numeric')return null;
+  if(a.criteria?.length){
+    let got=0,max=0,has=false;
+    a.criteria.forEach(c=>{max+=Number(c.max)||0;const v=r.items?.[c.id];if(v!==''&&v!=null){got+=Number(v)||0;has=true}});
+    return has&&max?got/max*100:null;
+  }
+  if(r.value===''||r.value==null)return null;
+  return Number(r.value)/(Number(a.maxScore)||100)*100;
+}
+function qualitative(a,sid){
+  const r=resultRecord(a,sid);if(!r||r.status&&r.status!=='normal')return '';
+  return a.scale==='qualitative'?(r.value||''):mention(percent(a,sid));
+}
+function resultText(a,sid,display='both'){
+  const r=resultRecord(a,sid);if(r?.status==='absent')return'<span class="badge f">Falta</span>';
+  if(r?.status==='notdone')return'<span class="badge">N/R</span>';
+  if(a.scale==='qualitative')return badge(r?.value);
+  const p=percent(a,sid);if(p==null)return'<span class="muted">—</span>';
+  const q=mention(p);
+  if(display==='numeric')return`<span class="score-main">${p.toFixed(1)}%</span>`;
+  if(display==='qualitative')return badge(q);
+  return`<div class="score-main">${p.toFixed(1)}%</div><div class="score-sub">${QUAL[q]}</div>`;
+}
+function assessmentCompletion(a){const sts=activeStudents();const done=sts.filter(s=>resultRecord(a,s.id)).length;return sts.length?Math.round(done/sts.length*100):0}
+function subjectAverage(subject,sid,period='all'){
+  const vals=allAssessments().filter(a=>a.subject===subject&&(period==='all'||String(a.period)===String(period))).map(a=>{
+    if(a.scale==='numeric')return percent(a,sid);
+    const code=qualitative(a,sid);return {MB:95,B:80,S:60,I:35,F:10}[code]??null
+  }).filter(v=>v!=null);
+  return vals.length?vals.reduce((a,b)=>a+b,0)/vals.length:null
+}
+function go(view,subject){
+  ui.view=view;if(subject)ui.subject=subject;
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.toggle('active',b.dataset.view===view&&(!b.dataset.subject||b.dataset.subject===subject)));
+  render();
+}
+function setHeader(title,subtitle,actionLabel,showAction=true){
+  document.getElementById('pageTitle').textContent=title;
+  document.getElementById('pageSubtitle').textContent=subtitle||`${state.meta.className} · ${state.meta.schoolYear}`;
+  const b=document.getElementById('contextAction');b.textContent=actionLabel||'+ Nova avaliação';b.classList.toggle('hidden',!showAction);
+}
+function contextAction(){
+  if(ui.view==='students')openStudentModal();
+  else if(ui.view==='subject')openAssessmentModal(null,ui.subject);
+  else if(ui.view==='student')openPrintModal('student');
+  else if(ui.view==='inovar')exportInovarExcel();
+  else if(ui.view==='settings')exportBackup();
+  else openAssessmentModal();
+}
+function render(){
+  initializeSelection();
+  if(ui.view==='global')renderGlobal();
+  else if(ui.view==='subject')renderSubject(ui.subject);
+  else if(ui.view==='students')renderStudents();
+  else if(ui.view==='student')renderStudent();
+  else if(ui.view==='inovar')renderInovar();
+  else renderSettings();
+}
+function globalFilteredAssessments(){
+  return allAssessments().filter(a=>ui.global.subjects.includes(a.subject))
+    .filter(a=>ui.global.period==='all'||String(a.period)===String(ui.global.period))
+    .filter(a=>ui.global.type==='all'||a.type===ui.global.type)
+    .filter(a=>ui.global.selected.includes(a.id));
+}
+function renderGlobal(){
+  setHeader('Visão global',`${state.meta.className} · ${state.meta.teacher}`,'+ Nova avaliação',true);
+  const assessments=globalFilteredAssessments();
+  const students=activeStudents().filter(s=>s.name.toLowerCase().includes(ui.global.search.toLowerCase()));
+  const types=[...new Set(allAssessments().map(a=>a.type))].sort();
+  const completed=allAssessments().length?Math.round(allAssessments().reduce((x,a)=>x+assessmentCompletion(a),0)/allAssessments().length):0;
+  const subjectChecks=Object.entries(SUBJECTS).map(([k,v])=>`<label class="check"><input type="checkbox" ${ui.global.subjects.includes(k)?'checked':''} onchange="toggleGlobalSubject('${k}',this.checked)"> ${v.name}</label>`).join('');
+  const assessmentChecks=allAssessments().filter(a=>ui.global.subjects.includes(a.subject)).map(a=>`<label class="check"><input type="checkbox" ${ui.global.selected.includes(a.id)?'checked':''} onchange="toggleAssessment('${a.id}',this.checked)"> <span class="badge ${a.subject}">${SUBJECTS[a.subject].short}</span> ${esc(a.title)}</label>`).join('');
+  let html=`<div class="summary-grid">
+    <div class="card kpi"><small>Alunos ativos</small><strong>${activeStudents().length}</strong></div>
+    <div class="card kpi"><small>Avaliações</small><strong>${allAssessments().length}</strong></div>
+    <div class="card kpi"><small>Registos preenchidos</small><strong>${completed}%</strong></div>
+    <div class="card kpi"><small>Período visível</small><strong>${ui.global.period==='all'?'Todos':ui.global.period+'.º'}</strong></div>
+  </div>
+  <div class="card toolbar">
+    <div class="filters-grid" style="width:100%">
+      <div class="field"><label>Pesquisar aluno</label><input class="search" type="text" value="${esc(ui.global.search)}" oninput="ui.global.search=this.value;renderGlobal()" placeholder="Nome do aluno"></div>
+      <div class="field"><label>Período</label><select onchange="ui.global.period=this.value;renderGlobal()"><option value="all">Todos</option>${[1,2,3].map(p=>`<option value="${p}" ${String(ui.global.period)===String(p)?'selected':''}>${p}.º período</option>`).join('')}</select></div>
+      <div class="field"><label>Tipo</label><select onchange="ui.global.type=this.value;renderGlobal()"><option value="all">Todos os tipos</option>${types.map(t=>`<option ${ui.global.type===t?'selected':''}>${esc(t)}</option>`).join('')}</select></div>
+      <div class="field"><label>Mostrar</label><select onchange="ui.global.display=this.value;renderGlobal()"><option value="both" ${ui.global.display==='both'?'selected':''}>Nota e menção</option><option value="numeric" ${ui.global.display==='numeric'?'selected':''}>Só nota</option><option value="qualitative" ${ui.global.display==='qualitative'?'selected':''}>Só menção</option></select></div>
+    </div>
+    <div class="checks" style="width:100%;padding-top:4px">${subjectChecks}</div>
+  </div>
+  <details class="card assessment-picker"><summary>Escolher avaliações visíveis (${assessments.length})</summary><div class="assessment-list">${assessmentChecks||'<span class="muted">Sem avaliações nesta seleção.</span>'}</div></details>`;
+  html+=buildGlobalTable(students,assessments);
+  document.getElementById('content').innerHTML=html;
+}
+function buildGlobalTable(students,assessments){
+  if(!assessments.length)return'<div class="card empty">Escolha pelo menos uma avaliação para construir a grelha.</div>';
+  const groups=['pt','mat','em'].map(subject=>({subject,items:assessments.filter(a=>a.subject===subject)})).filter(g=>g.items.length);
+  let top='<tr><th class="sticky-num" rowspan="2">N.º</th><th class="sticky-name" rowspan="2">Aluno</th>';
+  groups.forEach(g=>top+=`<th class="subject-head ${g.subject}" colspan="${g.items.length+1}">${SUBJECTS[g.subject].name}</th>`);
+  top+='</tr><tr>';
+  groups.forEach(g=>{g.items.forEach(a=>top+=`<th title="${esc(a.title)}">${esc(shortTitle(a.title))}</th>`);top+=`<th>Média</th>`});top+='</tr>';
+  let body=students.map(s=>{
+    let row=`<tr><td class="sticky-num">${s.number}</td><td class="sticky-name"><button class="icon-btn" onclick="openStudent('${s.id}')">${esc(s.name)}</button></td>`;
+    groups.forEach(g=>{
+      g.items.forEach(a=>row+=`<td class="score-cell" onclick="openScoring('${a.id}','${s.id}')">${resultText(a,s.id,ui.global.display)}</td>`);
+      const av=subjectAverage(g.subject,s.id,ui.global.period);row+=`<td><strong>${av==null?'—':av.toFixed(1)+'%'}</strong></td>`;
+    });return row+'</tr>'
+  }).join('');
+  return`<div class="table-wrap"><table><thead>${top}</thead><tbody>${body}</tbody></table></div>`;
+}
+function shortTitle(t){return t.length>17?t.slice(0,15)+'…':t}
+function toggleGlobalSubject(k,on){if(on&&!ui.global.subjects.includes(k))ui.global.subjects.push(k);if(!on)ui.global.subjects=ui.global.subjects.filter(x=>x!==k);renderGlobal()}
+function toggleAssessment(id,on){if(on&&!ui.global.selected.includes(id))ui.global.selected.push(id);if(!on)ui.global.selected=ui.global.selected.filter(x=>x!==id);renderGlobal()}
+function renderSubject(subject){
+  const meta=SUBJECTS[subject];setHeader(meta.name,`${state.meta.className} · avaliações e resultados`,'+ Nova avaliação',true);
+  const list=allAssessments().filter(a=>a.subject===subject).sort((a,b)=>(a.order??0)-(b.order??0)||new Date(a.date)-new Date(b.date));
+  const periods=[1,2,3].map(p=>{
+    const items=list.filter(a=>Number(a.period)===p);
+    return`<div style="margin-bottom:24px"><div class="page-header"><div><h3>${p}.º período</h3><p>${items.length} avaliação${items.length===1?'':'ões'}</p></div></div>
+    <div class="assessment-grid">${items.length?items.map(a=>assessmentCard(a)).join(''):'<div class="card empty">Ainda não existem avaliações neste período.</div>'}</div></div>`
+  }).join('');
+  document.getElementById('content').innerHTML=`<div class="page-header"><div><h3>${meta.name}</h3><p>Crie, duplique, reordene e lance resultados.</p></div><div style="display:flex;gap:8px"><button class="btn" onclick="openPrintModal('subject','${subject}')">🖨 Imprimir disciplina</button><button class="btn" onclick="openExportModal('subject','${subject}')">⬇ Exportar</button></div></div>${periods}`;
+}
+function assessmentCard(a){
+  const done=assessmentCompletion(a),avg=activeStudents().map(s=>a.scale==='numeric'?percent(a,s.id):({MB:95,B:80,S:60,I:35,F:10}[qualitative(a,s.id)]??null)).filter(v=>v!=null);
+  const mean=avg.length?(avg.reduce((x,y)=>x+y,0)/avg.length).toFixed(1)+'%':'—';
+  return`<div class="card assessment-card ${a.subject}">
+    <span class="badge ${a.subject}">${esc(a.type)}</span><h4>${esc(a.title)}</h4>
+    <p>${formatDate(a.date)} · ${a.scale==='numeric'?'Numérica':'Qualitativa'} · média ${mean}</p>
+    <div class="progress"><span style="width:${done}%"></span></div><p>${done}% dos alunos com registo</p>
+    <div class="card-actions">
+      <button class="btn small primary" onclick="openScoring('${a.id}')">Lançar resultados</button>
+      <button class="btn small" onclick="openAssessmentModal('${a.id}')">Editar</button>
+      <button class="btn small" onclick="duplicateAssessment('${a.id}')">Duplicar</button>
+      <button class="icon-btn" title="Mover para cima" onclick="moveAssessment('${a.id}',-1)">↑</button>
+      <button class="icon-btn" title="Mover para baixo" onclick="moveAssessment('${a.id}',1)">↓</button>
+      <button class="icon-btn" title="Imprimir" onclick="openPrintModal('assessment',null,'${a.id}')">🖨</button>
+      <button class="icon-btn" title="Exportar" onclick="openExportModal('assessment',null,'${a.id}')">⬇</button>
+      <button class="icon-btn" title="Arquivar" onclick="archiveAssessment('${a.id}')">⌁</button>
+    </div></div>`
+}
+function formatDate(d){if(!d)return'Sem data';try{return new Intl.DateTimeFormat('pt-PT').format(new Date(d+'T12:00:00'))}catch(e){return d}}
+function renderStudents(){
+  setHeader('Alunos',`${state.meta.className} · gestão da turma`,'+ Adicionar aluno',true);
+  const rows=state.students.sort((a,b)=>(a.order??a.number)-(b.order??b.number)).map((s,i)=>`<tr>
+    <td>${s.number}</td><td><strong>${esc(s.name)}</strong>${s.active===false?' <span class="badge">Arquivado</span>':''}</td>
+    <td>${s.active===false?'Inativo':'Ativo'}</td>
+    <td class="actions"><button class="icon-btn" onclick="moveStudent('${s.id}',-1)">↑</button><button class="icon-btn" onclick="moveStudent('${s.id}',1)">↓</button>
+    <button class="btn small" onclick="openStudentModal('${s.id}')">Editar</button>
+    <button class="btn small" onclick="toggleStudent('${s.id}')">${s.active===false?'Reativar':'Arquivar'}</button>
+    <button class="btn small danger" onclick="deleteStudent('${s.id}')">Eliminar</button></td></tr>`).join('');
+  document.getElementById('content').innerHTML=`<div class="page-header"><div><h3>Lista de alunos</h3><p>Adicione, altere, arquive ou reorganize a turma.</p></div>
+  <button class="btn" onclick="openBulkStudents()">Importar lista</button></div>
+  <div class="table-wrap"><table class="students-table"><thead><tr><th>N.º</th><th>Nome</th><th>Estado</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>`;
+}
+function openStudent(id){ui.studentId=id;go('student')}
+function renderStudent(){
+  const sts=activeStudents();if(!sts.length){setHeader('Visão do aluno','Sem alunos','',false);document.getElementById('content').innerHTML='<div class="card empty">Adicione primeiro um aluno.</div>';return}
+  if(!sts.some(s=>s.id===ui.studentId))ui.studentId=sts[0].id;
+  const s=sts.find(x=>x.id===ui.studentId);setHeader('Visão do aluno',`${s.name} · ${state.meta.className}`,'🖨 Imprimir aluno',true);
+  const options=sts.map(x=>`<option value="${x.id}" ${x.id===s.id?'selected':''}>${x.number}. ${esc(x.name)}</option>`).join('');
+  const panels=Object.entries(SUBJECTS).map(([k,m])=>studentSubjectPanel(s,k,m)).join('');
+  const notes=state.studentNotes[s.id]||{};
+  document.getElementById('content').innerHTML=`<div class="student-layout">
+    <aside class="card student-side"><div class="field"><label>Escolher aluno</label><select onchange="ui.studentId=this.value;renderStudent()">${options}</select></div>
+      <div style="display:flex;gap:6px;margin-top:10px"><button class="btn small" onclick="stepStudent(-1)">← Anterior</button><button class="btn small" onclick="stepStudent(1)">Seguinte →</button></div>
+      <hr style="border:0;border-top:1px solid var(--line);margin:16px 0">
+      <div class="field"><label>Período</label><select id="studentPeriod" onchange="ui.studentPeriod=this.value;renderStudent()"><option value="all" ${ui.studentPeriod==='all'?'selected':''}>Todos</option><option value="1" ${String(ui.studentPeriod)==='1'?'selected':''}>1.º período</option><option value="2" ${String(ui.studentPeriod)==='2'?'selected':''}>2.º período</option><option value="3" ${String(ui.studentPeriod)==='3'?'selected':''}>3.º período</option></select></div>
+      <button class="btn" style="width:100%;margin-top:12px" onclick="openPrintModal('student')">🖨 Imprimir ficha</button><button class="btn" style="width:100%;margin-top:8px" onclick="openExportModal('student',null,null,'${s.id}')">⬇ Exportar aluno</button></aside>
+    <div class="student-main">
+      <div class="card student-hero"><div><h3>${esc(s.name)}</h3><p>N.º ${s.number} · ${state.meta.className}</p></div><div>${Object.keys(SUBJECTS).map(k=>{const v=subjectAverage(k,s.id);return`<span class="badge ${k}" style="margin-left:5px">${SUBJECTS[k].short}: ${v==null?'—':v.toFixed(1)+'%'}</span>`}).join('')}</div></div>
+      ${panels}
+      ${studentCommentsPanel(s.id)}
+      ${studentInovarPanel(s.id)}
+      <div class="card subject-panel"><h4>Avaliação global e observações</h4><div class="notes-grid">
+        <div class="field"><label>Observação interna</label><textarea onblur="saveStudentNote('${s.id}','internal',this.value)" placeholder="Não aparece nas impressões por defeito.">${esc(notes.internal||'')}</textarea></div>
+        <div class="field"><label>Texto para relatório / Inovar</label><textarea onblur="saveStudentNote('${s.id}','report',this.value)" placeholder="Síntese global do aluno.">${esc(notes.report||'')}</textarea></div>
+      </div></div>
+    </div></div>`;
+}
+function studentSubjectPanel(s,subject,m){
+  const period=ui.studentPeriod||'all';
+  const list=allAssessments().filter(a=>a.subject===subject&&(period==='all'||String(a.period)===String(period))).sort((a,b)=>new Date(a.date)-new Date(b.date));
+  const note=state.studentNotes[s.id]?.[subject]||'';
+  const rows=list.map(a=>`<tr><td>${esc(a.title)}<div class="muted">${esc(a.type)} · ${a.period}.º período</div></td><td>${resultText(a,s.id,'both')}</td><td>${esc(resultRecord(a,s.id)?.note||'')}</td><td><button class="btn small" onclick="openScoring('${a.id}','${s.id}')">Abrir</button></td></tr>`).join('');
+  const av=subjectAverage(subject,s.id,period);
+  return`<div class="card subject-panel"><h4><span>${m.name}</span><span class="badge ${subject}">${av==null?'Sem média':av.toFixed(1)+'%'}</span></h4>
+    <div class="table-wrap" style="box-shadow:none"><table class="student-results"><thead><tr><th>Avaliação</th><th>Resultado</th><th>Observação</th><th></th></tr></thead><tbody>${rows||'<tr><td colspan="4">Sem avaliações.</td></tr>'}</tbody></table></div>
+    <div class="field" style="margin-top:12px"><label>Comentário de ${m.name}</label><textarea onblur="saveStudentNote('${s.id}','${subject}',this.value)" placeholder="Comentário da disciplina.">${esc(note)}</textarea></div></div>`
+}
+function stepStudent(delta){const sts=activeStudents();let i=sts.findIndex(s=>s.id===ui.studentId);i=(i+delta+sts.length)%sts.length;ui.studentId=sts[i].id;renderStudent()}
+function saveStudentNote(sid,key,value){state.studentNotes[sid]=state.studentNotes[sid]||{};state.studentNotes[sid][key]=value;saveState('Comentário guardado')}
+function renderSettings(){
+  setHeader('Configuração e cópias',`Dados gerais · versão ${APP_VERSION}`,'Gravar cópia',true);
+  document.getElementById('content').innerHTML=`<div class="page-header"><div><h3>Configuração</h3><p>Personalize a turma e proteja os dados.</p></div></div>
+  <div class="assessment-grid">
+    <div class="card subject-panel"><h4>Google Drive</h4><p class="muted">${googleAccessToken?'A aplicação está ligada ao Google Drive e mantém também uma cópia local.':'A aplicação está em modo local neste navegador.'}</p><button class="btn ${googleAccessToken?'danger':'primary'}" onclick="toggleGoogleDrive()">${googleAccessToken?'Desligar Google Drive':'Ligar Google Drive'}</button><p class="muted" style="margin-top:12px">Pasta no Drive: <strong>Avalia+ 1.º Ciclo</strong> · ficheiro <strong>dados.json</strong>.</p></div>
+    <div class="card subject-panel"><h4>Dados da turma</h4>
+      <div class="field"><label>Ano letivo</label><input type="text" value="${esc(state.meta.schoolYear)}" onblur="state.meta.schoolYear=this.value;saveState();render()"></div>
+      <div class="field" style="margin-top:10px"><label>Turma</label><input type="text" value="${esc(state.meta.className)}" onblur="state.meta.className=this.value;saveState();render()"></div>
+      <div class="field" style="margin-top:10px"><label>Professor</label><input type="text" value="${esc(state.meta.teacher)}" onblur="state.meta.teacher=this.value;saveState();render()"></div>
+      <div class="field" style="margin-top:10px"><label>Escola</label><input type="text" value="${esc(state.meta.school||'')}" onblur="state.meta.school=this.value;saveState()"></div>
+    </div>
+    <div class="card subject-panel"><h4>Cópias de segurança</h4><p class="muted">Exporte regularmente um ficheiro JSON. Pode restaurá-lo noutro computador.</p>
+      <button class="btn primary" onclick="exportBackup()">💾 Gravar cópia de segurança</button>
+      <label class="btn" style="display:inline-block">↥ Importar cópia<input type="file" accept=".json" hidden onchange="importBackup(this.files[0])"></label>
+      <div class="warning" style="margin-top:14px">A aplicação mantém uma cópia local. Com o Google Drive ligado, os dados também ficam sincronizados entre os seus equipamentos.</div>
+    </div>
+    <div class="card subject-panel"><h4>Versão e modelo inicial</h4><p><strong>Gestor de Avaliações do 1.º Ciclo · versão ${APP_VERSION}</strong></p><p class="muted">Repõe Ana cm, Miguel cm e Paula cm, com uma avaliação sumativa e duas mini fichas por período em cada disciplina.</p>
+      <button class="btn danger" onclick="resetDemo()">Repor modelo inicial</button>
+    </div>
+  </div>`;
+}
+function openStudentModal(id){
+  const s=id?state.students.find(x=>x.id===id):{id:uid('s'),number:(Math.max(0,...state.students.map(x=>Number(x.number)||0))+1),name:'',active:true};
+  modal(`<div class="modal-head"><h3>${id?'Editar aluno':'Adicionar aluno'}</h3><button class="icon-btn" onclick="closeModal()">✕</button></div>
+  <div class="modal-body"><div class="form-grid"><div class="field"><label>Número</label><input id="stuNum" type="number" value="${s.number}"></div><div class="field"><label>Nome</label><input id="stuName" type="text" value="${esc(s.name)}"></div></div></div>
+  <div class="modal-foot"><button class="btn" onclick="closeModal()">Cancelar</button><button class="btn primary" onclick="saveStudentModal('${s.id}',${id?'true':'false'})">Guardar</button></div>`);
+}
+function saveStudentModal(id,exists){
+  const number=Number(document.getElementById('stuNum').value),name=document.getElementById('stuName').value.trim();if(!name)return toast('Indique o nome.');
+  if(exists){const s=state.students.find(x=>x.id===id);s.number=number;s.name=name}
+  else state.students.push({id,number,name,active:true,order:state.students.length});
+  saveState('Aluno guardado');closeModal();renderStudents();
+}
+function toggleStudent(id){const s=state.students.find(x=>x.id===id);s.active=s.active===false;saveState();renderStudents()}
+function deleteStudent(id){if(!confirm('Eliminar definitivamente este aluno e os seus resultados?'))return;state.students=state.students.filter(s=>s.id!==id);state.assessments.forEach(a=>{if(a.results)delete a.results[id]});delete state.studentNotes[id];saveState('Aluno eliminado');renderStudents()}
+function moveStudent(id,delta){const list=state.students.sort((a,b)=>(a.order??a.number)-(b.order??b.number));const i=list.findIndex(x=>x.id===id),j=i+delta;if(j<0||j>=list.length)return;[list[i],list[j]]=[list[j],list[i]];list.forEach((s,k)=>s.order=k);state.students=list;saveState();renderStudents()}
+function openBulkStudents(){
+  modal(`<div class="modal-head"><h3>Importar lista de alunos</h3><button class="icon-btn" onclick="closeModal()">✕</button></div><div class="modal-body">
+    <p class="muted">Cole um aluno por linha. Pode usar “número; nome” ou apenas o nome.</p><textarea id="bulkNames" style="width:100%;min-height:260px" placeholder="1; Ana Silva&#10;2; Bernardo Costa"></textarea></div>
+    <div class="modal-foot"><button class="btn" onclick="closeModal()">Cancelar</button><button class="btn primary" onclick="saveBulkStudents()">Adicionar</button></div>`);
+}
+function saveBulkStudents(){const lines=document.getElementById('bulkNames').value.split(/\n/).map(x=>x.trim()).filter(Boolean);let next=Math.max(0,...state.students.map(x=>Number(x.number)||0))+1;lines.forEach(line=>{const p=line.split(/[;\t]/);let number,name;if(p.length>1&&!isNaN(Number(p[0]))){number=Number(p.shift());name=p.join(' ').trim()}else{number=next++;name=line}state.students.push({id:uid('s'),number,name,active:true,order:state.students.length})});saveState(`${lines.length} aluno(s) adicionado(s)`);closeModal();renderStudents()}
+function openAssessmentModal(id,defaultSubject){
+  const a=id?deepClone(state.assessments.find(x=>x.id===id)):{id:uid('a'),subject:defaultSubject||'pt',title:'',type:'Ficha de avaliação',period:1,date:new Date().toISOString().slice(0,10),scale:'numeric',maxScore:100,criteria:[],results:{},archived:false};
+  const criteria=(a.criteria||[]).map(c=>criteriaRow(c.id,c.label,c.max)).join('');
+  modal(`<div class="modal-head"><h3>${id?'Editar avaliação':'Nova avaliação'}</h3><button class="icon-btn" onclick="closeModal()">✕</button></div>
+  <div class="modal-body"><div class="form-grid">
+    <div class="field wide"><label>Título</label><input id="aTitle" type="text" value="${esc(a.title)}" placeholder="Ex.: Ficha de avaliação 2"></div>
+    <div class="field"><label>Disciplina</label><select id="aSubject">${Object.entries(SUBJECTS).map(([k,v])=>`<option value="${k}" ${a.subject===k?'selected':''}>${v.name}</option>`).join('')}</select></div>
+    <div class="field"><label>Tipo</label><input id="aType" type="text" value="${esc(a.type)}" list="typesList"><datalist id="typesList"><option>Ficha de avaliação</option><option>Questão-aula</option><option>Leitura</option><option>Ditado</option><option>Produção escrita</option><option>Cálculo mental</option><option>Resolução de problemas</option><option>Projeto</option><option>Apresentação</option></datalist></div>
+    <div class="field"><label>Período</label><select id="aPeriod">${[1,2,3].map(p=>`<option value="${p}" ${Number(a.period)===p?'selected':''}>${p}.º período</option>`).join('')}</select></div>
+    <div class="field"><label>Data</label><input id="aDate" type="date" value="${a.date||''}"></div>
+    <div class="field"><label>Escala</label><select id="aScale" onchange="toggleCriteriaArea()"><option value="numeric" ${a.scale==='numeric'?'selected':''}>Numérica</option><option value="qualitative" ${a.scale==='qualitative'?'selected':''}>Qualitativa</option></select></div>
+    <div class="field"><label>Cotação total (sem critérios)</label><input id="aMax" type="number" value="${a.maxScore||100}"></div>
+    <div class="wide" id="criteriaArea"><div style="display:flex;justify-content:space-between;align-items:center"><strong>Perguntas / critérios</strong><button class="btn small" onclick="addCriteriaRow()">+ Adicionar</button></div>
+      <p class="muted">Quando existem critérios, o total é calculado automaticamente pela soma das cotações.</p><div id="criteriaRows">${criteria}</div></div>
+  </div></div>
+  <div class="modal-foot"><button class="btn" onclick="closeModal()">Cancelar</button>${id?`<button class="btn danger" onclick="deleteAssessment('${a.id}')">Eliminar</button>`:''}<button class="btn primary" onclick="saveAssessmentModal('${a.id}',${id?'true':'false'})">Guardar</button></div>`);
+  toggleCriteriaArea();
+}
+function criteriaRow(id,label='',max=''){return`<div class="criteria-row" data-id="${id||uid('c')}"><input class="crit-label" type="text" value="${esc(label)}" placeholder="Pergunta / critério"><input class="crit-max" type="number" value="${max}" placeholder="Cotação"><button class="icon-btn" onclick="this.parentElement.remove()">✕</button></div>`}
+function addCriteriaRow(){document.getElementById('criteriaRows').insertAdjacentHTML('beforeend',criteriaRow(uid('c')))}
+function toggleCriteriaArea(){document.getElementById('criteriaArea')?.classList.toggle('hidden',document.getElementById('aScale')?.value!=='numeric')}
+function saveAssessmentModal(id,exists){
+  const title=document.getElementById('aTitle').value.trim();if(!title)return toast('Indique um título.');
+  const criteria=[...document.querySelectorAll('.criteria-row')].map(r=>({id:r.dataset.id,label:r.querySelector('.crit-label').value.trim()||'Critério',max:Number(r.querySelector('.crit-max').value)||0})).filter(c=>c.max>0);
+  const data={id,title,subject:document.getElementById('aSubject').value,type:document.getElementById('aType').value.trim()||'Avaliação',period:Number(document.getElementById('aPeriod').value),date:document.getElementById('aDate').value,scale:document.getElementById('aScale').value,maxScore:Number(document.getElementById('aMax').value)||100,criteria,archived:false};
+  if(exists){const idx=state.assessments.findIndex(a=>a.id===id);data.results=state.assessments[idx].results||{};data.order=state.assessments[idx].order;state.assessments[idx]=data}
+  else{data.results={};data.order=state.assessments.filter(a=>a.subject===data.subject).length;state.assessments.push(data);ui.global.selected.push(id)}
+  saveState('Avaliação guardada');closeModal();if(ui.view==='subject')renderSubject(data.subject);else render();
+}
+function duplicateAssessment(id){const a=deepClone(state.assessments.find(x=>x.id===id));a.id=uid('a');a.title+=' — cópia';a.results={};a.order=(a.order??0)+1;state.assessments.push(a);ui.global.selected.push(a.id);saveState('Avaliação duplicada');renderSubject(a.subject)}
+function archiveAssessment(id){const a=state.assessments.find(x=>x.id===id);if(!confirm(`Arquivar “${a.title}”?`))return;a.archived=true;saveState('Avaliação arquivada');renderSubject(a.subject)}
+function deleteAssessment(id){if(!confirm('Eliminar definitivamente esta avaliação?'))return;const a=state.assessments.find(x=>x.id===id);state.assessments=state.assessments.filter(x=>x.id!==id);ui.global.selected=ui.global.selected.filter(x=>x!==id);saveState('Avaliação eliminada');closeModal();renderSubject(a.subject)}
+function moveAssessment(id,delta){const a=state.assessments.find(x=>x.id===id);const list=state.assessments.filter(x=>x.subject===a.subject&&!x.archived).sort((x,y)=>(x.order??0)-(y.order??0));const i=list.findIndex(x=>x.id===id),j=i+delta;if(j<0||j>=list.length)return;[list[i],list[j]]=[list[j],list[i]];list.forEach((x,k)=>x.order=k);saveState();renderSubject(a.subject)}
+function openScoring(id,focusStudent){
+  const a=state.assessments.find(x=>x.id===id);const sts=activeStudents();
+  let heads='',rows='';
+  if(a.scale==='numeric'&&a.criteria?.length)heads=a.criteria.map(c=>`<th title="${esc(c.label)}">${esc(shortTitle(c.label))}<div class="muted">/${c.max}</div></th>`).join('');
+  else heads='<th>Resultado</th>';
+  rows=sts.map(s=>{
+    const r=a.results[s.id]||{status:'normal',items:{},value:'',note:''};
+    let fields='';
+    if(a.scale==='qualitative')fields=`<td><select onchange="updateQual('${a.id}','${s.id}',this.value)"><option value="">—</option>${Object.entries(QUAL).map(([k,v])=>`<option value="${k}" ${r.value===k?'selected':''}>${k} — ${v}</option>`).join('')}</select></td>`;
+    else if(a.criteria?.length)fields=a.criteria.map(c=>`<td><input type="number" min="0" max="${c.max}" step="0.5" value="${r.items?.[c.id]??''}" onchange="updateItem('${a.id}','${s.id}','${c.id}',this.value)"></td>`).join('');
+    else fields=`<td><input type="number" min="0" max="${a.maxScore}" step="0.5" value="${r.value??''}" onchange="updateDirect('${a.id}','${s.id}',this.value)"></td>`;
+    return`<tr id="score_${s.id}" ${focusStudent===s.id?'style="outline:3px solid #b8c7ff"':''}><td class="sticky-num">${s.number}</td><td class="sticky-name">${esc(s.name)}</td>${fields}<td id="total_${s.id}">${resultText(a,s.id,'both')}</td>
+      <td><select onchange="updateStatus('${a.id}','${s.id}',this.value)"><option value="normal" ${!r.status||r.status==='normal'?'selected':''}>Normal</option><option value="absent" ${r.status==='absent'?'selected':''}>Falta</option><option value="notdone" ${r.status==='notdone'?'selected':''}>Não realizado</option></select></td>
+      <td><textarea style="min-width:210px;min-height:58px;resize:vertical" onblur="updateResultNote('${a.id}','${s.id}',this.value)" placeholder="Comentário / observação desta avaliação">${esc(r.note||'')}</textarea></td></tr>`
+  }).join('');
+  modal(`<div class="modal large"><div class="modal-head"><div><h3>${esc(a.title)}</h3><span class="badge ${a.subject}">${SUBJECTS[a.subject].name}</span> <span class="muted">${a.period}.º período</span></div><button class="icon-btn" onclick="closeModal()">✕</button></div>
+    <div class="modal-body"><div class="table-wrap"><table class="scoring-table"><thead><tr><th class="sticky-num">N.º</th><th class="sticky-name">Aluno</th>${heads}<th>Total</th><th>Estado</th><th>Observação</th></tr></thead><tbody>${rows}</tbody></table></div></div>
+    <div class="modal-foot"><button class="btn" onclick="openPrintModal('assessment',null,'${a.id}')">🖨 Imprimir</button><button class="btn" onclick="openExportModal('assessment',null,'${a.id}')">⬇ Exportar</button><button class="btn primary" onclick="closeModal();render()">Concluir</button></div></div>`,true);
+  if(focusStudent)setTimeout(()=>document.getElementById('score_'+focusStudent)?.scrollIntoView({block:'center'}),30);
+}
+function ensureRecord(a,sid){a.results=a.results||{};a.results[sid]=a.results[sid]||{status:'normal',items:{},value:'',note:''};return a.results[sid]}
+function refreshTotal(a,sid){const el=document.getElementById('total_'+sid);if(el)el.innerHTML=resultText(a,sid,'both')}
+function updateItem(aid,sid,cid,val){const a=state.assessments.find(x=>x.id===aid),r=ensureRecord(a,sid);r.items=r.items||{};if(val==='')delete r.items[cid];else r.items[cid]=Number(val);saveState();refreshTotal(a,sid)}
+function updateDirect(aid,sid,val){const a=state.assessments.find(x=>x.id===aid),r=ensureRecord(a,sid);r.value=val===''?'':Number(val);saveState();refreshTotal(a,sid)}
+function updateQual(aid,sid,val){const a=state.assessments.find(x=>x.id===aid),r=ensureRecord(a,sid);r.value=val;saveState();refreshTotal(a,sid)}
+function updateStatus(aid,sid,val){const a=state.assessments.find(x=>x.id===aid),r=ensureRecord(a,sid);r.status=val;saveState();refreshTotal(a,sid)}
+function updateResultNote(aid,sid,val){const a=state.assessments.find(x=>x.id===aid),r=ensureRecord(a,sid);r.note=val;saveState()}
+function modal(inner,isFull=false){document.getElementById('modalRoot').innerHTML=`<div class="modal-backdrop" onclick="if(event.target===this)closeModal()">${isFull?inner:`<div class="modal">${inner}</div>`}</div>`}
+function closeModal(){document.getElementById('modalRoot').innerHTML=''}
+function openPrintModal(type='global',subject=null,assessmentId=null){
+  const assessments=allAssessments(),students=activeStudents();
+  modal(`<div class="modal-head"><h3>Imprimir / guardar em PDF</h3><button class="icon-btn" onclick="closeModal()">✕</button></div><div class="modal-body"><div class="form-grid">
+    <div class="field"><label>Conteúdo</label><select id="printType" onchange="updatePrintFields()"><option value="global" ${type==='global'?'selected':''}>Visão global da turma</option><option value="subject" ${type==='subject'?'selected':''}>Uma disciplina</option><option value="student" ${type==='student'?'selected':''}>Um aluno</option><option value="assessment" ${type==='assessment'?'selected':''}>Uma avaliação</option></select></div>
+    <div class="field"><label>Período</label><select id="printPeriod"><option value="all">Todos</option>${[1,2,3].map(p=>`<option value="${p}">${p}.º período</option>`).join('')}</select></div>
+    <div class="field print-subject"><label>Disciplina</label><select id="printSubject">${Object.entries(SUBJECTS).map(([k,v])=>`<option value="${k}" ${subject===k?'selected':''}>${v.name}</option>`).join('')}</select></div>
+    <div class="field print-student"><label>Aluno</label><select id="printStudent">${students.map(s=>`<option value="${s.id}" ${s.id===ui.studentId?'selected':''}>${s.number}. ${esc(s.name)}</option>`).join('')}</select></div>
+    <div class="field print-assessment"><label>Avaliação</label><select id="printAssessment">${assessments.map(a=>`<option value="${a.id}" ${a.id===assessmentId?'selected':''}>${SUBJECTS[a.subject].short} — ${esc(a.title)}</option>`).join('')}</select></div>
+    <div class="field"><label>Orientação</label><select id="printOrientation"><option value="landscape">Horizontal</option><option value="portrait">Vertical</option></select></div>
+    <label class="check"><input id="printNotes" type="checkbox"> Incluir observações</label>
+  </div><div class="warning" style="margin-top:14px">Na janela de impressão pode escolher a impressora ou “Guardar como PDF”.</div></div>
+  <div class="modal-foot"><button class="btn" onclick="closeModal()">Cancelar</button><button class="btn primary" onclick="printNow()">Pré-visualizar e imprimir</button></div>`);
+  updatePrintFields();
+}
+function updatePrintFields(){const t=document.getElementById('printType')?.value;document.querySelectorAll('.print-subject').forEach(x=>x.classList.toggle('hidden',t!=='subject'));document.querySelectorAll('.print-student').forEach(x=>x.classList.toggle('hidden',t!=='student'));document.querySelectorAll('.print-assessment').forEach(x=>x.classList.toggle('hidden',t!=='assessment'))}
+function printNow(){
+  const type=document.getElementById('printType').value,period=document.getElementById('printPeriod').value,orientation=document.getElementById('printOrientation').value,notes=document.getElementById('printNotes').checked;
+  let body='',title='';
+  if(type==='global'){title=`Visão global — ${state.meta.className}`;body=printGlobalHTML(period)}
+  if(type==='subject'){const s=document.getElementById('printSubject').value;title=`${SUBJECTS[s].name} — ${state.meta.className}`;body=printSubjectHTML(s,period)}
+  if(type==='student'){const sid=document.getElementById('printStudent').value,s=state.students.find(x=>x.id===sid);title=`${s.name} — ${state.meta.className}`;body=printStudentHTML(sid,period,notes)}
+  if(type==='assessment'){const aid=document.getElementById('printAssessment').value,a=state.assessments.find(x=>x.id===aid);title=`${a.title} — ${state.meta.className}`;body=printAssessmentHTML(aid,notes)}
+  const w=window.open('','_blank');if(!w)return toast('O navegador bloqueou a janela de impressão.');
+  w.document.write(printDocument(title,body,orientation));w.document.close();setTimeout(()=>{w.focus();w.print()},250);
+}
+function printDocument(title,body,orientation){return`<!DOCTYPE html><html lang="pt"><head><meta charset="UTF-8"><title>${esc(title)}</title><style>
+@page{size:A4 ${orientation};margin:10mm}body{font-family:Arial,sans-serif;color:#111;font-size:10px}h1{font-size:18px;margin:0}h2{font-size:14px;margin:18px 0 7px}.meta{color:#555;margin:4px 0 14px}table{border-collapse:collapse;width:100%;page-break-inside:auto}th,td{border:1px solid #777;padding:4px;text-align:center}th{background:#eee}td.name{text-align:left}tr{page-break-inside:avoid}.subject{font-weight:bold;background:#ddd}.note{text-align:left;white-space:pre-wrap}.page{page-break-after:always}.badge{font-weight:bold}.footer{margin-top:8px;color:#666;font-size:9px}</style></head><body><h1>${esc(title)}</h1><div class="meta">${esc(state.meta.school||'')} · ${esc(state.meta.teacher)} · ${esc(state.meta.schoolYear)}</div>${body}<div class="footer">Gerado pelo Gestor de Avaliações do 1.º Ciclo · versão ${APP_VERSION}</div></body></html>`}
+function printGlobalHTML(period){
+  let assessments=globalFilteredAssessments().filter(a=>period==='all'||String(a.period)===String(period));if(!assessments.length)assessments=allAssessments().filter(a=>period==='all'||String(a.period)===String(period));
+  let head='<tr><th>N.º</th><th>Aluno</th>'+assessments.map(a=>`<th>${SUBJECTS[a.subject].short}<br>${esc(a.title)}</th>`).join('')+'</tr>';
+  let rows=activeStudents().map(s=>`<tr><td>${s.number}</td><td class="name">${esc(s.name)}</td>${assessments.map(a=>`<td>${plainResult(a,s.id)}</td>`).join('')}</tr>`).join('');
+  return`<table><thead>${head}</thead><tbody>${rows}</tbody></table>`
+}
+function plainResult(a,sid){const r=resultRecord(a,sid);if(r?.status==='absent')return'Falta';if(r?.status==='notdone')return'N/R';if(a.scale==='qualitative')return esc(r?.value||'—');const p=percent(a,sid);return p==null?'—':p.toFixed(1)+'% ('+mention(p)+')'}
+function printSubjectHTML(subject,period){
+  const list=allAssessments().filter(a=>a.subject===subject&&(period==='all'||String(a.period)===String(period)));
+  let h='<tr><th>N.º</th><th>Aluno</th>'+list.map(a=>`<th>${esc(a.title)}</th>`).join('')+'<th>Média</th></tr>';
+  let r=activeStudents().map(s=>`<tr><td>${s.number}</td><td class="name">${esc(s.name)}</td>${list.map(a=>`<td>${plainResult(a,s.id)}</td>`).join('')}<td>${subjectAverage(subject,s.id,period)==null?'—':subjectAverage(subject,s.id,period).toFixed(1)+'%'}</td></tr>`).join('');
+  return`<table><thead>${h}</thead><tbody>${r}</tbody></table>`
+}
+function printAssessmentHTML(aid,notes){
+  const a=state.assessments.find(x=>x.id===aid);let h='<tr><th>N.º</th><th>Aluno</th>';
+  if(a.scale==='numeric'&&a.criteria?.length)h+=a.criteria.map(c=>`<th>${esc(c.label)} / ${c.max}</th>`).join('');
+  h+='<th>Resultado</th>'+(notes?'<th>Observação</th>':'')+'</tr>';
+  let rows=activeStudents().map(s=>{const r=resultRecord(a,s.id)||{};let cells='';if(a.scale==='numeric'&&a.criteria?.length)cells=a.criteria.map(c=>`<td>${r.items?.[c.id]??'—'}</td>`).join('');return`<tr><td>${s.number}</td><td class="name">${esc(s.name)}</td>${cells}<td>${plainResult(a,s.id)}</td>${notes?`<td class="note">${esc(r.note||'')}</td>`:''}</tr>`}).join('');
+  return`<h2>${SUBJECTS[a.subject].name} · ${a.period}.º período · ${formatDate(a.date)}</h2><table><thead>${h}</thead><tbody>${rows}</tbody></table>`
+}
+function printStudentHTML(sid,period,notes){
+  const s=state.students.find(x=>x.id===sid),n=state.studentNotes[sid]||{};let out=`<h2>N.º ${s.number} · ${esc(s.name)}</h2>`;
+  Object.entries(SUBJECTS).forEach(([k,m])=>{const list=allAssessments().filter(a=>a.subject===k&&(period==='all'||String(a.period)===String(period)));out+=`<h2>${m.name}</h2><table><thead><tr><th>Avaliação</th><th>Período</th><th>Resultado</th>${notes?'<th>Observação</th>':''}</tr></thead><tbody>${list.map(a=>`<tr><td class="name">${esc(a.title)}</td><td>${a.period}.º</td><td>${plainResult(a,sid)}</td>${notes?`<td class="note">${esc(resultRecord(a,sid)?.note||'')}</td>`:''}</tr>`).join('')}</tbody></table>${n[k]?`<p class="note"><strong>Comentário:</strong> ${esc(n[k])}</p>`:''}`});if(n.report)out+=`<h2>Síntese global</h2><p class="note">${esc(n.report)}</p>`;return out
+}
+
+function studentCommentsPanel(sid){
+  const items=[];allAssessments().forEach(a=>{const note=resultRecord(a,sid)?.note;if(note&&note.trim())items.push({a,note})});
+  return`<div class="card subject-panel"><h4>Todos os comentários das avaliações <span class="badge">${items.length}</span></h4><div class="comment-summary">${items.length?items.map(x=>`<div class="comment-item"><strong><span class="badge ${x.a.subject}">${SUBJECTS[x.a.subject].short}</span> ${esc(x.a.title)} · ${x.a.period}.º período</strong><p>${esc(x.note)}</p></div>`).join(''):'<span class="muted">Ainda não existem comentários registados nas avaliações deste aluno.</span>'}</div></div>`
+}
+function studentInovarPanel(sid){
+  const texts=state.inovar?.texts?.[sid]||{};
+  const rows=['pt','mat','em','global'].filter(k=>texts[k]?.trim()).map(k=>`<div class="comment-item"><strong>${k==='global'?'Síntese global':SUBJECTS[k].name}</strong><p>${esc(texts[k])}</p></div>`).join('');
+  return`<div class="card subject-panel"><h4>Textos do Inovar <button class="btn small" onclick="ui.inovarStudentId='${sid}';go('inovar')">Editar frases</button></h4><div class="comment-summary">${rows||'<span class="muted">Ainda não existem textos preparados para o Inovar.</span>'}</div></div>`
+}
+function ensureInovarText(sid,scope){state.inovar=state.inovar||{phraseBank:deepClone(DEFAULT_INOVAR_BANK),texts:{}};state.inovar.texts=state.inovar.texts||{};state.inovar.texts[sid]=state.inovar.texts[sid]||{};return state.inovar.texts[sid][scope]||''}
+function getInovarSubthemes(scope){const area=state.inovar?.phraseBank?.[scope]||{};return Object.keys(area)}
+function currentInovarSubtheme(scope){ui.inovarSubtheme=ui.inovarSubtheme||{};const subs=getInovarSubthemes(scope);if(!subs.length){state.inovar.phraseBank[scope]={'Geral':[]};ui.inovarSubtheme[scope]='Geral';return'Geral'}if(!subs.includes(ui.inovarSubtheme[scope]))ui.inovarSubtheme[scope]=subs[0];return ui.inovarSubtheme[scope]}
+function renderInovar(){
+  const sts=activeStudents();if(!sts.length){setHeader('Frases do Inovar','Sem alunos','',false);document.getElementById('content').innerHTML='<div class="card empty">Adicione primeiro um aluno.</div>';return}
+  ui.inovarStudentId=ui.inovarStudentId&&sts.some(s=>s.id===ui.inovarStudentId)?ui.inovarStudentId:sts[0].id;ui.inovarScope=ui.inovarScope||'pt';
+  const sid=ui.inovarStudentId,scope=ui.inovarScope,subthemes=getInovarSubthemes(scope),subtheme=currentInovarSubtheme(scope),bank=state.inovar.phraseBank[scope][subtheme]||[],text=ensureInovarText(sid,scope);
+  setHeader('Frases do Inovar','Escolha a disciplina, o subtema e a frase adequada a cada aluno','⬇ Exportar Inovar',true);
+  const overview=sts.map(s=>{const t=state.inovar.texts[s.id]||{};return`<tr><td>${s.number}</td><td class="name"><button class="icon-btn" onclick="ui.inovarStudentId='${s.id}';renderInovar()">${esc(s.name)}</button></td><td class="overview-text">${esc(t.pt||'')}</td><td class="overview-text">${esc(t.mat||'')}</td><td class="overview-text">${esc(t.em||'')}</td><td class="overview-text">${esc(t.global||'')}</td></tr>`}).join('');
+  document.getElementById('content').innerHTML=`<div class="page-header"><div><h3>Preparação dos textos</h3><p>Selecione um subtema, adicione frases e ajuste livremente o texto final.</p></div><button class="btn primary" onclick="exportInovarExcel()">⬇ Exportar para Excel</button></div>
+  <div class="inovar-layout"><aside class="card subject-panel">
+    <div class="field"><label>Aluno</label><select onchange="ui.inovarStudentId=this.value;renderInovar()">${sts.map(s=>`<option value="${s.id}" ${s.id===sid?'selected':''}>${s.number}. ${esc(s.name)}</option>`).join('')}</select></div>
+    <div class="field" style="margin-top:10px"><label>Disciplina / área</label><select onchange="ui.inovarScope=this.value;renderInovar()"><option value="pt" ${scope==='pt'?'selected':''}>Português</option><option value="mat" ${scope==='mat'?'selected':''}>Matemática</option><option value="em" ${scope==='em'?'selected':''}>Estudo do Meio</option><option value="global" ${scope==='global'?'selected':''}>Síntese global</option></select></div>
+    <div class="field" style="margin-top:10px"><label>Subtema</label><select onchange="ui.inovarSubtheme[ui.inovarScope]=this.value;renderInovar()">${subthemes.map(st=>`<option value="${esc(st)}" ${st===subtheme?'selected':''}>${esc(st)}</option>`).join('')}</select></div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:7px"><button class="btn small" onclick="addInovarSubtheme()">+ Subtema</button><button class="btn small" onclick="renameInovarSubtheme()">Renomear</button><button class="btn small danger" onclick="deleteInovarSubtheme()">Eliminar</button></div>
+    <div class="field" style="margin-top:14px"><label>Frase disponível</label><select id="inovarPhrase"><option value="">Escolher uma frase…</option>${bank.map((p,i)=>`<option value="${i}">${esc(p)}</option>`).join('')}</select></div>
+    <button class="btn primary" style="width:100%;margin-top:8px" onclick="addSelectedInovarPhrase()">+ Adicionar ao texto</button>
+    <hr style="border:0;border-top:1px solid var(--line);margin:18px 0"><h4>Banco de frases · ${esc(subtheme)}</h4><div class="phrase-list">${bank.map((p,i)=>`<div class="phrase-row"><input value="${esc(p)}" onblur="updatePhraseBank(${i},this.value)"><button class="icon-btn" title="Eliminar" onclick="deletePhraseBank(${i})">✕</button></div>`).join('')}</div><button class="btn small" style="margin-top:9px" onclick="addPhraseBank()">+ Nova frase</button>
+  </aside><div class="student-main"><div class="card subject-panel"><h4>${scope==='global'?'Síntese global':SUBJECTS[scope].name} · ${esc(sts.find(s=>s.id===sid).name)}</h4><p class="muted" style="margin-top:-6px">Subtema selecionado: <strong>${esc(subtheme)}</strong></p><div class="field"><label>Texto final</label><textarea class="inovar-text" oninput="saveInovarText('${sid}','${scope}',this.value)" placeholder="Adicione frases da lista ou escreva livremente.">${esc(text)}</textarea></div><p class="muted">Pode combinar frases de vários subtemas. O texto é guardado automaticamente.</p></div>
+  <div class="card subject-panel"><h4>Visão geral da turma</h4><div class="table-wrap" style="box-shadow:none"><table><thead><tr><th>N.º</th><th>Aluno</th><th>Português</th><th>Matemática</th><th>Estudo do Meio</th><th>Síntese global</th></tr></thead><tbody>${overview}</tbody></table></div></div></div></div>`
+}
+function saveInovarText(sid,scope,value){state.inovar.texts[sid]=state.inovar.texts[sid]||{};state.inovar.texts[sid][scope]=value;saveState()}
+function addSelectedInovarPhrase(){const sel=document.getElementById('inovarPhrase'),i=Number(sel.value);if(sel.value==='')return toast('Escolha uma frase.');const scope=ui.inovarScope,subtheme=currentInovarSubtheme(scope),phrase=state.inovar.phraseBank[scope][subtheme][i],current=ensureInovarText(ui.inovarStudentId,scope).trim();state.inovar.texts[ui.inovarStudentId][scope]=(current?current+' ':'')+phrase;saveState('Frase adicionada');renderInovar()}
+function updatePhraseBank(i,value){const scope=ui.inovarScope,subtheme=currentInovarSubtheme(scope),v=value.trim();if(!v)return deletePhraseBank(i);state.inovar.phraseBank[scope][subtheme][i]=v;saveState('Banco de frases atualizado')}
+function deletePhraseBank(i){const scope=ui.inovarScope,subtheme=currentInovarSubtheme(scope);state.inovar.phraseBank[scope][subtheme].splice(i,1);saveState('Frase removida');renderInovar()}
+function addPhraseBank(){const scope=ui.inovarScope,subtheme=currentInovarSubtheme(scope);state.inovar.phraseBank[scope][subtheme].push('Nova frase');saveState();renderInovar()}
+function addInovarSubtheme(){const scope=ui.inovarScope,name=(prompt('Nome do novo subtema:')||'').trim();if(!name)return;if(state.inovar.phraseBank[scope][name])return alert('Já existe um subtema com esse nome.');state.inovar.phraseBank[scope][name]=[];ui.inovarSubtheme[scope]=name;saveState('Subtema criado');renderInovar()}
+function renameInovarSubtheme(){const scope=ui.inovarScope,old=currentInovarSubtheme(scope),name=(prompt('Novo nome do subtema:',old)||'').trim();if(!name||name===old)return;if(state.inovar.phraseBank[scope][name])return alert('Já existe um subtema com esse nome.');const area=state.inovar.phraseBank[scope],rebuilt={};Object.keys(area).forEach(k=>rebuilt[k===old?name:k]=area[k]);state.inovar.phraseBank[scope]=rebuilt;ui.inovarSubtheme[scope]=name;saveState('Subtema renomeado');renderInovar()}
+function deleteInovarSubtheme(){const scope=ui.inovarScope,subtheme=currentInovarSubtheme(scope),subs=getInovarSubthemes(scope);if(subs.length<=1)return alert('Cada disciplina deve manter pelo menos um subtema.');if(!confirm(`Eliminar o subtema “${subtheme}” e todas as frases nele guardadas?`))return;delete state.inovar.phraseBank[scope][subtheme];ui.inovarSubtheme[scope]=getInovarSubthemes(scope)[0];saveState('Subtema eliminado');renderInovar()}
+function exportInovarExcel(){
+  const rows=[['N.º','Aluno','Português','Matemática','Estudo do Meio','Síntese global']];activeStudents().forEach(s=>{const t=state.inovar.texts[s.id]||{};rows.push([s.number,s.name,t.pt||'',t.mat||'',t.em||'',t.global||''])});
+  downloadXlsx([{name:'Inovar',rows}],`inovar_${safeFile(state.meta.className)}_${dateStamp()}.xlsx`);toast('Ficheiro do Inovar exportado')
+}
+function openExportModal(type='global',subject=null,assessmentId=null,studentId=null){
+  const assessments=allAssessments(),students=activeStudents();
+  modal(`<div class="modal-head"><h3>Exportar dados</h3><button class="icon-btn" onclick="closeModal()">✕</button></div><div class="modal-body"><div class="export-options">
+    <div class="field"><label>Formato</label><select id="exportFormat" onchange="updateExportFields()"><option value="xlsx">Excel (.xlsx)</option><option value="image">Imagem PNG com barras e caixa e bigodes</option></select></div>
+    <div class="field"><label>Conteúdo</label><select id="exportType" onchange="updateExportFields()"><option value="global" ${type==='global'?'selected':''}>Visão global / seleção atual</option><option value="subject" ${type==='subject'?'selected':''}>Uma disciplina</option><option value="assessment" ${type==='assessment'?'selected':''}>Uma avaliação</option><option value="student" ${type==='student'?'selected':''}>Um aluno</option><option value="inovar">Textos do Inovar</option></select></div>
+    <div class="field"><label>Período</label><select id="exportPeriod"><option value="all">Todos</option>${[1,2,3].map(p=>`<option value="${p}">${p}.º período</option>`).join('')}</select></div>
+    <div class="field export-subject"><label>Disciplina</label><select id="exportSubject">${Object.entries(SUBJECTS).map(([k,v])=>`<option value="${k}" ${subject===k?'selected':''}>${v.name}</option>`).join('')}</select></div>
+    <div class="field export-assessment"><label>Avaliação</label><select id="exportAssessment">${assessments.map(a=>`<option value="${a.id}" ${a.id===assessmentId?'selected':''}>${SUBJECTS[a.subject].short} — ${esc(a.title)}</option>`).join('')}</select></div>
+    <div class="field export-student"><label>Aluno</label><select id="exportStudent">${students.map(s=>`<option value="${s.id}" ${(studentId||ui.studentId)===s.id?'selected':''}>${s.number}. ${esc(s.name)}</option>`).join('')}</select></div>
+    <label class="check export-notes"><input id="exportNotes" type="checkbox" checked> Incluir comentários e observações</label>
+    <div class="chart-note export-chart">A imagem utiliza apenas resultados numéricos. Na visão global e por disciplina, cada barra corresponde à média do aluno na seleção. Na avaliação, cada barra corresponde à nota obtida.</div>
+  </div></div><div class="modal-foot"><button class="btn" onclick="closeModal()">Cancelar</button><button class="btn primary" onclick="exportNow()">Exportar</button></div>`);updateExportFields()
+}
+function updateExportFields(){const t=document.getElementById('exportType')?.value,f=document.getElementById('exportFormat')?.value;document.querySelectorAll('.export-subject').forEach(x=>x.classList.toggle('hidden',t!=='subject'));document.querySelectorAll('.export-assessment').forEach(x=>x.classList.toggle('hidden',t!=='assessment'));document.querySelectorAll('.export-student').forEach(x=>x.classList.toggle('hidden',t!=='student'));document.querySelectorAll('.export-chart').forEach(x=>x.classList.toggle('hidden',f!=='image'));document.querySelectorAll('.export-notes').forEach(x=>x.classList.toggle('hidden',f==='image'));if(t==='inovar'&&f==='image'){document.getElementById('exportFormat').value='xlsx';toast('Os textos do Inovar são exportados para Excel.')}}
+function exportNow(){const format=document.getElementById('exportFormat').value,type=document.getElementById('exportType').value,period=document.getElementById('exportPeriod').value;if(type==='inovar')return exportInovarExcel();if(format==='image')return exportChartImage(type,period);const notes=document.getElementById('exportNotes').checked;const sheets=buildExportSheets(type,period,notes);if(!sheets.length)return toast('Não existem dados para exportar.');downloadXlsx(sheets,`avaliacoes_${safeFile(state.meta.className)}_${dateStamp()}.xlsx`);toast('Ficheiro Excel exportado')}
+function buildExportSheets(type,period,notes){
+  if(type==='global'){let list=globalFilteredAssessments().filter(a=>period==='all'||String(a.period)===String(period));if(!list.length)list=allAssessments().filter(a=>period==='all'||String(a.period)===String(period));const rows=[['N.º','Aluno',...list.map(a=>`${SUBJECTS[a.subject].short} — ${a.title}`)]];activeStudents().forEach(s=>rows.push([s.number,s.name,...list.map(a=>plainResultRaw(a,s.id))]));return[{name:'Visão global',rows}]}
+  if(type==='subject'){const subject=document.getElementById('exportSubject').value,list=allAssessments().filter(a=>a.subject===subject&&(period==='all'||String(a.period)===String(period))),rows=[['N.º','Aluno',...list.map(a=>a.title),'Média']];activeStudents().forEach(s=>rows.push([s.number,s.name,...list.map(a=>plainResultRaw(a,s.id)),subjectAverage(subject,s.id,period)??'']));return[{name:SUBJECTS[subject].name,rows}]}
+  if(type==='assessment'){const aid=document.getElementById('exportAssessment').value,a=state.assessments.find(x=>x.id===aid);if(!a)return[];const head=['N.º','Aluno',...(a.scale==='numeric'&&a.criteria?.length?a.criteria.map(c=>`${c.label} / ${c.max}`):[]),'Resultado','Menção','Estado'];if(notes)head.push('Comentário / observação');const rows=[head];activeStudents().forEach(s=>{const r=resultRecord(a,s.id)||{},p=percent(a,s.id),row=[s.number,s.name,...(a.scale==='numeric'&&a.criteria?.length?a.criteria.map(c=>r.items?.[c.id]??''):[]),a.scale==='numeric'?(p??''):(r.value||''),a.scale==='numeric'?(p==null?'':QUAL[mention(p)]):(QUAL[r.value]||''),r.status==='absent'?'Falta':r.status==='notdone'?'Não realizado':'Normal'];if(notes)row.push(r.note||'');rows.push(row)});return[{name:safeSheet(a.title),rows}]}
+  if(type==='student'){const sid=document.getElementById('exportStudent').value,s=state.students.find(x=>x.id===sid),list=allAssessments().filter(a=>period==='all'||String(a.period)===String(period));const rows=[['Disciplina','Período','Avaliação','Tipo','Resultado','Menção','Comentário / observação']];list.forEach(a=>{const p=percent(a,sid),r=resultRecord(a,sid)||{};rows.push([SUBJECTS[a.subject].name,a.period,a.title,a.type,a.scale==='numeric'?(p??''):(r.value||''),a.scale==='numeric'?(p==null?'':QUAL[mention(p)]):(QUAL[r.value]||''),notes?(r.note||''):''])});const inv=state.inovar.texts[sid]||{};const note=state.studentNotes[sid]||{};return[{name:safeSheet(s.name),rows},{name:'Sínteses',rows:[['Área','Texto'],['Português',inv.pt||note.pt||''],['Matemática',inv.mat||note.mat||''],['Estudo do Meio',inv.em||note.em||''],['Global',inv.global||note.report||'']]}]}
+  return[]
+}
+function plainResultRaw(a,sid){const r=resultRecord(a,sid);if(r?.status==='absent')return'Falta';if(r?.status==='notdone')return'Não realizado';if(a.scale==='qualitative')return r?.value||'';const p=percent(a,sid);return p==null?'':p}
+function exportChartImage(type,period){const data=chartData(type,period);if(!data.values.length)return toast('Não existem resultados numéricos nesta seleção.');const canvas=drawChartReport(data);canvas.toBlob(blob=>{if(!blob)return;downloadBlob(blob,`graficos_${safeFile(data.title)}_${dateStamp()}.png`);toast('Imagem exportada')},'image/png')}
+function chartData(type,period){let labels=[],values=[],title='',subtitle='';
+  if(type==='assessment'){const aid=document.getElementById('exportAssessment').value,a=state.assessments.find(x=>x.id===aid);title=a?.title||'Avaliação';subtitle=a?`${SUBJECTS[a.subject].name} · ${a.period}.º período`:'';activeStudents().forEach(s=>{const v=a?percent(a,s.id):null;if(v!=null){labels.push(s.name);values.push(v)}})}
+  else if(type==='student'){const sid=document.getElementById('exportStudent').value,s=state.students.find(x=>x.id===sid),list=allAssessments().filter(a=>a.scale==='numeric'&&(period==='all'||String(a.period)===String(period)));title=s?.name||'Aluno';subtitle='Resultados nas avaliações numéricas';list.forEach(a=>{const v=percent(a,sid);if(v!=null){labels.push(`${SUBJECTS[a.subject].short} · ${a.title}`);values.push(v)}})}
+  else{const subject=type==='subject'?document.getElementById('exportSubject').value:null;let list=type==='global'?globalFilteredAssessments():allAssessments().filter(a=>a.subject===subject);list=list.filter(a=>a.scale==='numeric'&&(period==='all'||String(a.period)===String(period)));title=type==='subject'?SUBJECTS[subject].name:`Visão global — ${state.meta.className}`;subtitle=period==='all'?'Todos os períodos':`${period}.º período`;activeStudents().forEach(s=>{const vals=list.map(a=>percent(a,s.id)).filter(v=>v!=null);if(vals.length){labels.push(s.name);values.push(vals.reduce((x,y)=>x+y,0)/vals.length)}})}
+  return{labels,values,title,subtitle}
+}
+function drawChartReport(data){const W=1600,H=Math.max(900,220+data.values.length*34),c=document.createElement('canvas');c.width=W;c.height=H;const x=c.getContext('2d');x.fillStyle='#ffffff';x.fillRect(0,0,W,H);x.fillStyle='#172033';x.font='bold 38px Arial';x.fillText(data.title,65,65);x.fillStyle='#667085';x.font='22px Arial';x.fillText(`${data.subtitle} · ${state.meta.schoolYear} · versão ${APP_VERSION}`,65,102);
+  const left=300,top=155,barW=850,rowH=Math.min(38,Math.max(24,(H-top-100)/data.values.length));x.strokeStyle='#dfe4ea';x.fillStyle='#667085';x.font='18px Arial';for(let t=0;t<=100;t+=20){const px=left+barW*t/100;x.beginPath();x.moveTo(px,top-15);x.lineTo(px,top+rowH*data.values.length);x.stroke();x.fillText(String(t),px-8,top-25)}
+  data.values.forEach((v,i)=>{const y=top+i*rowH;x.fillStyle='#1f2937';x.font='17px Arial';const lab=String(data.labels[i]);x.fillText(lab.length>30?lab.slice(0,28)+'…':lab,65,y+rowH*.68);x.fillStyle='#3157d5';x.fillRect(left,y+5,barW*Math.max(0,Math.min(100,v))/100,rowH-10);x.fillStyle='#172033';x.font='bold 16px Arial';x.fillText(v.toFixed(1)+'%',left+barW*Math.max(0,Math.min(100,v))/100+8,y+rowH*.66)});
+  const sx=1260,sy=top,sh=Math.min(560,H-top-150),stats=boxStats(data.values);x.fillStyle='#172033';x.font='bold 24px Arial';x.fillText('Caixa e bigodes',1190,128);for(let t=0;t<=100;t+=20){const py=sy+sh-sh*t/100;x.strokeStyle='#e5e7eb';x.beginPath();x.moveTo(sx-70,py);x.lineTo(sx+190,py);x.stroke();x.fillStyle='#667085';x.font='16px Arial';x.fillText(String(t),sx-105,py+5)}const py=v=>sy+sh-sh*v/100;x.strokeStyle='#172033';x.lineWidth=4;x.beginPath();x.moveTo(sx+60,py(stats.min));x.lineTo(sx+60,py(stats.max));x.stroke();x.beginPath();x.moveTo(sx+20,py(stats.min));x.lineTo(sx+100,py(stats.min));x.moveTo(sx+20,py(stats.max));x.lineTo(sx+100,py(stats.max));x.stroke();x.fillStyle='#dbe4ff';x.fillRect(sx,py(stats.q3),120,py(stats.q1)-py(stats.q3));x.strokeRect(sx,py(stats.q3),120,py(stats.q1)-py(stats.q3));x.beginPath();x.moveTo(sx,py(stats.median));x.lineTo(sx+120,py(stats.median));x.stroke();x.fillStyle='#172033';x.font='18px Arial';x.fillText(`Máx.: ${stats.max.toFixed(1)}%`,1190,sy+sh+45);x.fillText(`Q3: ${stats.q3.toFixed(1)}%`,1190,sy+sh+72);x.fillText(`Mediana: ${stats.median.toFixed(1)}%`,1190,sy+sh+99);x.fillText(`Q1: ${stats.q1.toFixed(1)}%`,1190,sy+sh+126);x.fillText(`Mín.: ${stats.min.toFixed(1)}%`,1190,sy+sh+153);x.fillStyle='#667085';x.font='17px Arial';x.fillText('Gerado pelo Gestor de Avaliações do 1.º Ciclo',65,H-35);return c}
+function boxStats(values){const a=[...values].sort((x,y)=>x-y),q=p=>{const pos=(a.length-1)*p,lo=Math.floor(pos),hi=Math.ceil(pos);return a[lo]+(a[hi]-a[lo])*(pos-lo)};return{min:a[0],q1:q(.25),median:q(.5),q3:q(.75),max:a[a.length-1]}}
+function dateStamp(){return new Date().toISOString().slice(0,10)}function safeFile(s){return String(s||'dados').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-zA-Z0-9_-]+/g,'_').replace(/^_+|_+$/g,'').slice(0,60)||'dados'}function safeSheet(s){return String(s||'Folha').replace(/[\\\/?*\[\]:]/g,' ').slice(0,31)||'Folha'}
+function downloadBlob(blob,name){const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}
+function xmlEsc(v){return String(v??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&apos;')}
+function colName(n){let s='';while(n){n--;s=String.fromCharCode(65+n%26)+s;n=Math.floor(n/26)}return s}
+function sheetXml(rows){let out='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetViews><sheetView workbookViewId="0"/></sheetViews><sheetFormatPr defaultRowHeight="15"/><sheetData>';rows.forEach((row,ri)=>{out+=`<row r="${ri+1}">`;row.forEach((v,ci)=>{if(v===null||v===undefined||v==='')return;const ref=colName(ci+1)+(ri+1);if(typeof v==='number'&&Number.isFinite(v))out+=`<c r="${ref}" t="n"><v>${v}</v></c>`;else out+=`<c r="${ref}" t="inlineStr"><is><t xml:space="preserve">${xmlEsc(v)}</t></is></c>`});out+='</row>'});return out+'</sheetData></worksheet>'}
+function downloadXlsx(sheets,filename){const files={};files['[Content_Types].xml']='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>'+sheets.map((s,i)=>`<Override PartName="/xl/worksheets/sheet${i+1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`).join('')+'</Types>';files['_rels/.rels']='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>';files['xl/workbook.xml']='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets>'+sheets.map((s,i)=>`<sheet name="${xmlEsc(safeSheet(s.name))}" sheetId="${i+1}" r:id="rId${i+1}"/>`).join('')+'</sheets></workbook>';files['xl/_rels/workbook.xml.rels']='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'+sheets.map((s,i)=>`<Relationship Id="rId${i+1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet${i+1}.xml"/>`).join('')+`<Relationship Id="rId${sheets.length+1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`;files['xl/styles.xml']='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><fonts count="1"><font><sz val="11"/><name val="Calibri"/></font></fonts><fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills><borders count="1"><border/></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/></cellXfs></styleSheet>';sheets.forEach((s,i)=>files[`xl/worksheets/sheet${i+1}.xml`]=sheetXml(s.rows));downloadBlob(new Blob([zipStore(files)],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),filename)}
+function zipStore(files){const enc=new TextEncoder(),parts=[],central=[];let offset=0;Object.entries(files).forEach(([name,content])=>{const n=enc.encode(name),d=typeof content==='string'?enc.encode(content):content,crc=crc32(d),local=new Uint8Array(30+n.length),v=new DataView(local.buffer);v.setUint32(0,0x04034b50,true);v.setUint16(4,20,true);v.setUint16(6,0,true);v.setUint16(8,0,true);v.setUint16(10,0,true);v.setUint16(12,0,true);v.setUint32(14,crc,true);v.setUint32(18,d.length,true);v.setUint32(22,d.length,true);v.setUint16(26,n.length,true);v.setUint16(28,0,true);local.set(n,30);parts.push(local,d);const cen=new Uint8Array(46+n.length),c=new DataView(cen.buffer);c.setUint32(0,0x02014b50,true);c.setUint16(4,20,true);c.setUint16(6,20,true);c.setUint16(8,0,true);c.setUint16(10,0,true);c.setUint16(12,0,true);c.setUint16(14,0,true);c.setUint32(16,crc,true);c.setUint32(20,d.length,true);c.setUint32(24,d.length,true);c.setUint16(28,n.length,true);c.setUint16(30,0,true);c.setUint16(32,0,true);c.setUint16(34,0,true);c.setUint16(36,0,true);c.setUint32(38,0,true);c.setUint32(42,offset,true);cen.set(n,46);central.push(cen);offset+=local.length+d.length});const centralSize=central.reduce((s,a)=>s+a.length,0),end=new Uint8Array(22),e=new DataView(end.buffer);e.setUint32(0,0x06054b50,true);e.setUint16(4,0,true);e.setUint16(6,0,true);e.setUint16(8,central.length,true);e.setUint16(10,central.length,true);e.setUint32(12,centralSize,true);e.setUint32(16,offset,true);e.setUint16(20,0,true);const total=offset+centralSize+end.length,out=new Uint8Array(total);let p=0;[...parts,...central,end].forEach(a=>{out.set(a,p);p+=a.length});return out}
+let CRC_TABLE=null;function crc32(bytes){if(!CRC_TABLE){CRC_TABLE=new Uint32Array(256);for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=(c&1)?0xedb88320^(c>>>1):c>>>1;CRC_TABLE[n]=c>>>0}}let c=0xffffffff;for(const b of bytes)c=CRC_TABLE[(c^b)&255]^(c>>>8);return(c^0xffffffff)>>>0}
+
+function exportBackup(){const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`gestor_avaliacoes_v${APP_VERSION.replace('.','_')}_${state.meta.className.replace(/\s/g,'_')}_${new Date().toISOString().slice(0,10)}.json`;a.click();URL.revokeObjectURL(url);toast('Cópia exportada')}
+function importBackup(file){if(!file)return;const r=new FileReader();r.onload=()=>{try{const data=JSON.parse(r.result);if(!data.students||!data.assessments)throw Error();state=normalizeState(data);ui.global.selected=[];initializeSelection();saveState('Cópia restaurada');render()}catch(e){alert('O ficheiro não é uma cópia válida.')}};r.readAsText(file)}
+function resetDemo(){if(!confirm('Repor o modelo inicial? Os dados atuais serão substituídos. Grave primeiro uma cópia de segurança.'))return;state=normalizeState(deepClone(DEMO));ui.global.selected=[];initializeSelection();saveState('Modelo inicial reposto');render()}
+document.querySelectorAll('.nav-btn').forEach(b=>b.addEventListener('click',()=>go(b.dataset.view,b.dataset.subject)));
+render();
+setCloudUI('','Guardado automaticamente');
+setTimeout(()=>{initGoogleDrive();showStorageChoice()},250);
+</script>
+</body></html>
